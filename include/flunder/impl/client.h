@@ -23,7 +23,6 @@
 #include <variant>
 
 #include "flunder/client.h"
-#include "util/json/json.h"
 
 namespace flunder {
 namespace impl {

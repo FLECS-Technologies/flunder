@@ -26,7 +26,7 @@ if(FLECS_BUILD_TESTS)
         GTest::gtest
         GTest::gtest_main
         zenohc::lib
-        flunder
+        flunder.shared
     )
 
     add_test(NAME flunder.test.init COMMAND bash -c "docker rm -f flecs-flunder-test && docker run -d --name flecs-flunder-test -p 7447:7447 -p 8000:8000 --env RUST_LOG=debug cr.flecs.tech/tech.flecs.service-mesh:2.4.0-dormouse-dev --adminspace-permissions=rw")

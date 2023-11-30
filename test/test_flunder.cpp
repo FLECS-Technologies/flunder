@@ -19,9 +19,8 @@
 #include <mutex>
 #include <thread>
 
-#include "core/global/types/type_traits.h"
 #include "flunder/client.h"
-#include "util/string/string_utils.h"
+#include "flunder/to_string.h"
 
 static auto cv = std::condition_variable{};
 static auto m = std::mutex{};
@@ -90,14 +89,14 @@ constexpr auto is_signed(T)
     {                                                            \
         using std::operator""s;                                  \
         return "application/integer+"s.append(is_signed(type{})) \
-            .append(std::to_string(8 * sizeof(type)));           \
+            .append(flunder::to_string(8 * sizeof(type)));       \
     }
-#define DEF_FLOAT_ENCODING(type)                                               \
-    template <>                                                                \
-    auto encoding<type>(type)                                                  \
-    {                                                                          \
-        using std::operator""s;                                                \
-        return "application/float+"s.append(std::to_string(8 * sizeof(type))); \
+#define DEF_FLOAT_ENCODING(type)                                                   \
+    template <>                                                                    \
+    auto encoding<type>(type)                                                      \
+    {                                                                              \
+        using std::operator""s;                                                    \
+        return "application/float+"s.append(flunder::to_string(8 * sizeof(type))); \
     }
 #define DEF_CUSTOM_ENCODING(type, enc) \
     template <>                        \
@@ -159,8 +158,8 @@ void flunder_cbk_userp(flunder::client_t* client, const flunder::variable_t* var
     ASSERT_EQ(client, userp);
     ASSERT_EQ(var->encoding(), encoding(T{}));
     ASSERT_EQ(var->topic(), topic(T{}));
-    ASSERT_EQ(var->len(), flunder::stringify(val(T{})).length());
-    ASSERT_EQ(var->value(), flunder::stringify(val(T{})));
+    ASSERT_EQ(var->len(), flunder::to_string(val(T{})).length());
+    ASSERT_EQ(var->value(), flunder::to_string(val(T{})));
 }
 
 void flunder_cbk(flunder::client_t* /*client*/, const flunder::variable_t* var)
@@ -306,8 +305,8 @@ void flunder_cbk_c_userp(void* client, const flunder::variable_t* var, void* use
     ASSERT_EQ(client, userp);
     ASSERT_EQ(std::string_view{flunder_variable_encoding(var)}, encoding(T{}));
     ASSERT_EQ(std::string_view{flunder_variable_topic(var)}, topic(T{}));
-    ASSERT_EQ(std::string_view{flunder_variable_value(var)}, flunder::stringify(val(T{})));
-    ASSERT_EQ(flunder_variable_len(var), flunder::stringify(val(T{})).length());
+    ASSERT_EQ(std::string_view{flunder_variable_value(var)}, flunder::to_string(val(T{})));
+    ASSERT_EQ(flunder_variable_len(var), flunder::to_string(val(T{})).length());
 }
 
 void flunder_cbk_c(void* /*client*/, const flunder::variable_t* var)

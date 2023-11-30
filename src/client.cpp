@@ -14,7 +14,8 @@
 
 #include "flunder/client.h"
 
-#include "impl/client.h"
+#include "flunder/impl/client.h"
+#include "flunder/to_string.h"
 
 namespace flunder {
 
@@ -69,85 +70,121 @@ auto client_t::disconnect() //
     return _impl->disconnect();
 }
 
+/* bool */
 auto client_t::publish(std::string_view topic, bool value) const //
     -> int
 {
-    return publish_bool(topic, value ? "true" : "false");
+    return _impl->publish_bool(topic, flunder::to_string(value));
 }
-
-auto client_t::publish(
-    std::string_view topic,
-    const char* value) const //
+/* integer-types */
+auto client_t::publish(std::string_view topic, std::int8_t value) const //
     -> int
 {
-    return publish_string(topic, std::string{value});
+    return _impl->publish_int(
+        topic,
+        sizeof(value),
+        std::is_signed_v<decltype(value)>,
+        flunder::to_string(value));
 }
-
-auto client_t::publish(
-    std::string_view topic,
-    const void* data,
-    size_t len) const //
+auto client_t::publish(std::string_view topic, std::int16_t value) const //
     -> int
 {
-    return publish_raw(topic, data, len);
+    return _impl->publish_int(
+        topic,
+        sizeof(value),
+        std::is_signed_v<decltype(value)>,
+        flunder::to_string(value));
 }
-
-auto client_t::publish(
-    std::string_view topic, const void* data, size_t len, std::string_view encoding) const //
+auto client_t::publish(std::string_view topic, std::int32_t value) const //
     -> int
 {
-    return publish_custom(topic, data, len, encoding);
+    return _impl->publish_int(
+        topic,
+        sizeof(value),
+        std::is_signed_v<decltype(value)>,
+        flunder::to_string(value));
 }
-
-auto client_t::publish_bool(
-    std::string_view topic,
-    const std::string& value) const //
+auto client_t::publish(std::string_view topic, std::int64_t value) const //
     -> int
 {
-    return _impl->publish_bool(topic, value);
+    return _impl->publish_int(
+        topic,
+        sizeof(value),
+        std::is_signed_v<decltype(value)>,
+        flunder::to_string(value));
 }
-
-auto client_t::publish_int(
-    std::string_view topic,
-    size_t size,
-    bool is_signed,
-    const std::string& value) const //
+auto client_t::publish(std::string_view topic, std::uint8_t value) const //
     -> int
 {
-    return _impl->publish_int(topic, size, is_signed, value);
+    return _impl->publish_int(
+        topic,
+        sizeof(value),
+        std::is_signed_v<decltype(value)>,
+        flunder::to_string(value));
 }
-
-auto client_t::publish_float(
-    std::string_view topic,
-    size_t size,
-    const std::string& value) const //
+auto client_t::publish(std::string_view topic, std::uint16_t value) const //
     -> int
 {
-    return _impl->publish_float(topic, size, value);
+    return _impl->publish_int(
+        topic,
+        sizeof(value),
+        std::is_signed_v<decltype(value)>,
+        flunder::to_string(value));
 }
-
-auto client_t::publish_string(
-    std::string_view topic,
-    const std::string& value) const //
+auto client_t::publish(std::string_view topic, std::uint32_t value) const //
+    -> int
+{
+    return _impl->publish_int(
+        topic,
+        sizeof(value),
+        std::is_signed_v<decltype(value)>,
+        flunder::to_string(value));
+}
+auto client_t::publish(std::string_view topic, std::uint64_t value) const //
+    -> int
+{
+    return _impl->publish_int(
+        topic,
+        sizeof(value),
+        std::is_signed_v<decltype(value)>,
+        flunder::to_string(value));
+}
+/* floating-point-types */
+auto client_t::publish(std::string_view topic, float value) const //
+    -> int
+{
+    return _impl->publish_float(topic, sizeof(value), flunder::to_string(value));
+}
+auto client_t::publish(std::string_view topic, double value) const //
+    -> int
+{
+    return _impl->publish_float(topic, sizeof(value), flunder::to_string(value));
+}
+/* string-types */
+auto client_t::publish(std::string_view topic, const std::string& value) const //
     -> int
 {
     return _impl->publish_string(topic, value);
 }
+auto client_t::publish(std::string_view topic, const std::string_view& value) const //
+    -> int
+{
+    return _impl->publish_string(topic, flunder::to_string(value));
+}
+auto client_t::publish(std::string_view topic, const char* value) const //
+    -> int
+{
+    return _impl->publish_string(topic, flunder::to_string(value));
+}
 
-auto client_t::publish_raw(
-    std::string_view topic,
-    const void* data,
-    size_t len) const //
+auto client_t::publish(std::string_view topic, const void* data, size_t len) const //
     -> int
 {
     return _impl->publish_raw(topic, data, len);
 }
 
-auto client_t::publish_custom(
-    std::string_view topic,
-    const void* data,
-    size_t len,
-    std::string_view encoding) const //
+auto client_t::publish(
+    std::string_view topic, const void* data, size_t len, std::string_view encoding) const //
     -> int
 {
     return _impl->publish_custom(topic, data, len, encoding);

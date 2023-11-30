@@ -16,9 +16,10 @@
 
 #include <cpr/cpr.h>
 
+#include <nlohmann/json.hpp>
 #include <thread>
 
-#include "util/cxx20/string.h"
+#include "flunder/to_string.h"
 
 namespace flunder {
 namespace impl {
@@ -29,8 +30,6 @@ struct overload : Ts...
 {
     using Ts::operator()...;
 };
-template <class... Ts>
-overload(Ts...) -> overload<Ts...>;
 
 static auto lib_subscribe_callback(const z_sample_t* sample, void* arg) //
     -> void
@@ -49,7 +48,7 @@ static auto lib_subscribe_callback(const z_sample_t* sample, void* arg) //
             std::string_view{
                 reinterpret_cast<const char*>(sample->encoding.suffix.start),
                 sample->encoding.suffix.len}),
-        stringify(ntp64_to_unix_time(sample->timestamp.time))};
+        flunder::to_string(ntp64_to_unix_time(sample->timestamp.time))};
     z_str_drop(z_move(keyexpr));
 
     std::visit(
@@ -127,7 +126,7 @@ auto encoding_from_string(std::string_view encoding) //
     }
 
     for (const auto& it : encodings) {
-        if (!it.first.empty() && cxx20::starts_with(encoding, it.first)) {
+        if (!it.first.empty() && encoding.starts_with(it.first)) {
             return {it.second, encoding.substr(it.first.length())};
         }
     }
@@ -224,7 +223,7 @@ auto client_t::publish_int(
     using std::operator""s;
 
     auto suffix = is_signed ? "+s"s : "+u"s;
-    suffix += stringify(size * 8);
+    suffix += flunder::to_string(size * 8);
 
     return publish(topic, z_encoding(Z_ENCODING_PREFIX_APP_INTEGER, suffix.c_str()), value);
 }
@@ -235,7 +234,7 @@ auto client_t::publish_float(
     const std::string& value) const //
     -> int
 {
-    const auto size_str = stringify("+", size * 8);
+    const auto size_str = "+" + std::to_string(size * 8);
     return publish(topic, z_encoding(Z_ENCODING_PREFIX_APP_FLOAT, size_str.c_str()), value);
 }
 
@@ -283,7 +282,7 @@ auto client_t::publish(
     options.encoding = encoding;
     options.congestion_control = z_congestion_control_t::Z_CONGESTION_CONTROL_BLOCK;
 
-    const auto keyexpr = cxx20::starts_with(topic, '/') ? topic.data() + 1 : topic.data();
+    const auto keyexpr = topic.starts_with('/') ? topic.data() + 1 : topic.data();
 
     const auto res = z_put(
         z_session_loan(&_z_session),
@@ -321,7 +320,7 @@ auto client_t::subscribe(
     const void* userp) //
     -> int
 {
-    const auto keyexpr = cxx20::starts_with(topic, '/') ? topic.data() + 1 : topic.data();
+    const auto keyexpr = topic.starts_with('/') ? topic.data() + 1 : topic.data();
 
     if (_subscriptions.count(keyexpr) > 0) {
         return -1;
@@ -367,7 +366,7 @@ auto client_t::subscribe(
 auto client_t::unsubscribe(std::string_view topic) //
     -> int
 {
-    const auto keyexpr = cxx20::starts_with(topic, '/') ? topic.data() + 1 : topic.data();
+    const auto keyexpr = topic.starts_with('/') ? topic.data() + 1 : topic.data();
 
     auto it = _subscriptions.find(keyexpr);
     if (it == _subscriptions.cend()) {
@@ -389,7 +388,7 @@ auto client_t::add_mem_storage(
         return -1;
     }
 
-    const auto keyexpr = cxx20::starts_with(topic, '/') ? topic.data() + 1 : topic.data();
+    const auto keyexpr = topic.starts_with('/') ? topic.data() + 1 : topic.data();
 
     auto url = cpr::Url{std::string{"http://"}
                             .append(_host)
@@ -397,7 +396,7 @@ auto client_t::add_mem_storage(
                             .append("/@/router/local/config/plugins/storage_manager/storages/")
                             .append(name)};
 
-    const auto req_json = json_t{{"key_expr", keyexpr}, {"volume", "memory"}};
+    const auto req_json = nlohmann::json{{"key_expr", keyexpr}, {"volume", "memory"}};
     const auto res = cpr::Put(
         url,
         cpr::Header{{"content-type", "application/json"}},
@@ -448,7 +447,7 @@ auto client_t::get(std::string_view topic) const //
     auto options = z_get_options_default();
     options.target = Z_QUERY_TARGET_ALL;
 
-    auto keyexpr = z_keyexpr(cxx20::starts_with(topic, '/') ? topic.data() + 1 : topic.data());
+    auto keyexpr = z_keyexpr(topic.starts_with('/') ? topic.data() + 1 : topic.data());
     if (!z_keyexpr_is_initialized(&keyexpr)) {
         return {-1, vars};
     }
@@ -463,7 +462,7 @@ auto client_t::get(std::string_view topic) const //
             auto keyexpr = z_keyexpr_to_string(sample.keyexpr);
             auto keystr = std::string{"/"} + std::string{keyexpr._cstr};
             z_str_drop(z_move(keyexpr));
-            if (cxx20::starts_with(keystr, "/@")) {
+            if (keystr.starts_with("/@")) {
                 continue;
             }
 
@@ -477,7 +476,7 @@ auto client_t::get(std::string_view topic) const //
                     std::string_view{
                         reinterpret_cast<const char*>(sample.encoding.suffix.start),
                         sample.encoding.suffix.len}),
-                stringify(ntp64_to_unix_time(sample.timestamp.time)));
+                flunder::to_string(ntp64_to_unix_time(sample.timestamp.time)));
         }
     }
 
@@ -490,7 +489,7 @@ auto client_t::get(std::string_view topic) const //
 auto client_t::erase(std::string_view topic) //
     -> int
 {
-    const auto keyexpr = cxx20::starts_with(topic, '/') ? topic.data() + 1 : topic.data();
+    const auto keyexpr = topic.starts_with('/') ? topic.data() + 1 : topic.data();
 
     auto options = z_delete_options_default();
     const auto res = z_delete(z_session_loan(&_z_session), z_keyexpr(keyexpr), &options);

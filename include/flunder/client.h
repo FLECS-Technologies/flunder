@@ -14,7 +14,6 @@
 
 #pragma once
 
-/*! @todo */
 #ifndef FLECS_EXPORT
 #define FLECS_EXPORT
 #endif // FLECS_EXPORT
@@ -31,15 +30,12 @@
 #include <stdbool.h>
 #else
 
+#include <cinttypes>
 #include <functional>
 #include <memory>
-#include <string>
 #include <string_view>
 #include <tuple>
 #include <vector>
-
-#include "core/global/types/type_traits.h"
-#include "util/string/string_utils.h"
 
 namespace flunder {
 namespace impl {
@@ -97,17 +93,32 @@ public:
     FLECS_EXPORT auto publish(std::string_view topic, bool value) const //
         -> int;
     /* integer-types */
-    template <typename T>
-    FLECS_EXPORT auto publish(std::string_view topic, const T& value) const //
-        -> std::enable_if_t<std::is_integral_v<T> && !std::is_same_v<T, bool>, int>;
+    FLECS_EXPORT auto publish(std::string_view topic, std::int8_t value) const //
+        -> int;
+    FLECS_EXPORT auto publish(std::string_view topic, std::int16_t value) const //
+        -> int;
+    FLECS_EXPORT auto publish(std::string_view topic, std::int32_t value) const //
+        -> int;
+    FLECS_EXPORT auto publish(std::string_view topic, std::int64_t value) const //
+        -> int;
+    FLECS_EXPORT auto publish(std::string_view topic, std::uint8_t value) const //
+        -> int;
+    FLECS_EXPORT auto publish(std::string_view topic, std::uint16_t value) const //
+        -> int;
+    FLECS_EXPORT auto publish(std::string_view topic, std::uint32_t value) const //
+        -> int;
+    FLECS_EXPORT auto publish(std::string_view topic, std::uint64_t value) const //
+        -> int;
     /* floating-point-types */
-    template <typename T>
-    FLECS_EXPORT auto publish(std::string_view topic, const T& value) const //
-        -> std::enable_if_t<std::is_floating_point_v<T>, int>;
+    FLECS_EXPORT auto publish(std::string_view topic, float value) const //
+        -> int;
+    FLECS_EXPORT auto publish(std::string_view topic, double value) const //
+        -> int;
     /* string-types */
-    template <typename T>
-    FLECS_EXPORT auto publish(std::string_view topic, const T& value) const //
-        -> std::enable_if_t<is_std_string_v<T> || is_std_string_view_v<T>, int>;
+    FLECS_EXPORT auto publish(std::string_view topic, const std::string& value) const //
+        -> int;
+    FLECS_EXPORT auto publish(std::string_view topic, const std::string_view& value) const //
+        -> int;
     FLECS_EXPORT auto publish(std::string_view topic, const char* value) const //
         -> int;
     /* raw data */
@@ -148,45 +159,8 @@ private:
     FLECS_EXPORT friend auto swap(client_t& lhs, client_t& rhs) noexcept //
         -> void;
 
-    FLECS_EXPORT auto publish_bool(std::string_view topic, const std::string& value) const //
-        -> int;
-    FLECS_EXPORT auto publish_int(
-        std::string_view topic, size_t size, bool is_signed, const std::string& value) const //
-        -> int;
-    FLECS_EXPORT auto publish_float(
-        std::string_view topic, size_t size, const std::string& value) const //
-        -> int;
-    FLECS_EXPORT auto publish_string(std::string_view topic, const std::string& value) const //
-        -> int;
-    FLECS_EXPORT auto publish_raw(std::string_view topic, const void* data, size_t len) const //
-        -> int;
-    FLECS_EXPORT auto publish_custom(
-        std::string_view topic, const void* data, size_t len, std::string_view encoding) const //
-        -> int;
-
     std::unique_ptr<impl::client_t> _impl;
 };
-
-template <typename T>
-auto client_t::publish(std::string_view topic, const T& value) const //
-    -> std::enable_if_t<std::is_integral_v<T> && !std::is_same_v<T, bool>, int>
-{
-    return publish_int(topic, sizeof(T), std::is_signed_v<T>, stringify(value));
-}
-
-template <typename T>
-auto client_t::publish(std::string_view topic, const T& value) const //
-    -> std::enable_if_t<std::is_floating_point_v<T>, int>
-{
-    return publish_float(topic, sizeof(T), stringify(value));
-}
-
-template <typename T>
-auto client_t::publish(std::string_view topic, const T& value) const //
-    -> std::enable_if_t<is_std_string_v<T> || is_std_string_view_v<T>, int>
-{
-    return publish_string(topic, std::string{value});
-}
 
 extern "C" {
 #endif // __cplusplus
