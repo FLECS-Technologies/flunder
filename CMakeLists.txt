@@ -34,12 +34,14 @@ endif()
 
 set(SRC_LIB
     src/client.cpp
+    src/to_string.cpp
     src/variable.cpp
     src/impl/client.cpp
 )
 
 set(HEADER_LIB
     include/flunder/client.h
+    include/flunder/to_string.h
     include/flunder/variable.h
     include/flunder/impl/client.h
 )
