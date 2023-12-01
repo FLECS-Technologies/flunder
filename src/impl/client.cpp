@@ -20,7 +20,7 @@
 
 #include "util/cxx20/string.h"
 
-namespace FLECS {
+namespace flunder {
 namespace impl {
 
 /** @todo */
@@ -274,14 +274,14 @@ auto flunder_client_t::publish(std::string_view topic, z_encoding_t encoding,
   return (res == 0) ? 0 : -1;
 }
 
-auto flunder_client_t::subscribe(FLECS::flunder_client_t *client,
+auto flunder_client_t::subscribe(flunder::flunder_client_t *client,
                                  std::string_view topic,
                                  flunder_client_t::subscribe_cbk_t cbk) //
     -> int {
   return subscribe(client, topic, subscribe_cbk_var_t{cbk}, nullptr);
 }
 
-auto flunder_client_t::subscribe(FLECS::flunder_client_t *client,
+auto flunder_client_t::subscribe(flunder::flunder_client_t *client,
                                  std::string_view topic,
                                  flunder_client_t::subscribe_cbk_userp_t cbk,
                                  const void *userp) //
@@ -289,7 +289,7 @@ auto flunder_client_t::subscribe(FLECS::flunder_client_t *client,
   return subscribe(client, topic, subscribe_cbk_var_t{cbk}, userp);
 }
 
-auto flunder_client_t::subscribe(FLECS::flunder_client_t *client,
+auto flunder_client_t::subscribe(flunder::flunder_client_t *client,
                                  std::string_view topic,
                                  subscribe_cbk_var_t cbk,
                                  const void *userp) //
@@ -498,4 +498,4 @@ auto ntp64_to_unix_time(std::uint64_t ntp_time) //
 }
 
 } // namespace impl
-} // namespace FLECS
+} // namespace flunder

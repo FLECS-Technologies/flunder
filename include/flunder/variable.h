@@ -21,7 +21,7 @@
 #include <string_view>
 #include <variant>
 
-namespace FLECS {
+namespace flunder {
 
 class flunder_variable_t
 {
@@ -56,7 +56,7 @@ private:
     std::variant<std::string_view, std::string> _timestamp;
 };
 
-} // namespace FLECS
+} // namespace flunder
 
 #else // __cplusplus
 
@@ -70,7 +70,7 @@ typedef struct flunder_variable_t flunder_variable_t;
 #ifdef __cplusplus
 extern "C" {
 
-using flunder_variable_t = FLECS::flunder_variable_t;
+using flunder_variable_t = flunder::flunder_variable_t;
 #endif //__cplusplus
 
 FLECS_EXPORT flunder_variable_t* flunder_variable_new(

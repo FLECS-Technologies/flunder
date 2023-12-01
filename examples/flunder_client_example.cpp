@@ -30,8 +30,8 @@ bool g_stop;
 
 void signal_handler(int) { g_stop = 1; }
 
-void flunder_receive_callback(FLECS::flunder_client_t *client,
-                              const FLECS::flunder_variable_t *var) {
+void flunder_receive_callback(flunder::flunder_client_t *client,
+                              const flunder::flunder_variable_t *var) {
   const auto now =
       std::chrono::high_resolution_clock::now().time_since_epoch().count();
   std::fprintf(stdout,
@@ -54,8 +54,8 @@ void flunder_receive_callback(FLECS::flunder_client_t *client,
   }
 }
 
-void flunder_receive_callback_userp(FLECS::flunder_client_t *client,
-                                    const FLECS::flunder_variable_t *var,
+void flunder_receive_callback_userp(flunder::flunder_client_t *client,
+                                    const flunder::flunder_variable_t *var,
                                     const void *userp) {
   const auto timestamp =
       std::chrono::high_resolution_clock::now().time_since_epoch().count();
@@ -71,7 +71,7 @@ int main() {
   signal(SIGINT, &signal_handler);
   signal(SIGTERM, &signal_handler);
 
-  auto flunder_client = FLECS::flunder_client_t{};
+  auto flunder_client = flunder::flunder_client_t{};
 
   flunder_client.connect();
   flunder_client.add_mem_storage("flunder-cpp", "/flecs/flunder/**");

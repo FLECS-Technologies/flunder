@@ -25,7 +25,7 @@
 #include "flunder/client.h"
 #include "util/json/json.h"
 
-namespace FLECS {
+namespace flunder {
 namespace impl {
 
 class flunder_client_t {
@@ -71,13 +71,13 @@ public:
                                    std::string_view encoding) const //
       -> int;
 
-  using subscribe_cbk_t = FLECS::flunder_client_t::subscribe_cbk_t;
-  using subscribe_cbk_userp_t = FLECS::flunder_client_t::subscribe_cbk_userp_t;
-  FLECS_EXPORT auto subscribe(FLECS::flunder_client_t *client,
+  using subscribe_cbk_t = flunder::flunder_client_t::subscribe_cbk_t;
+  using subscribe_cbk_userp_t = flunder::flunder_client_t::subscribe_cbk_userp_t;
+  FLECS_EXPORT auto subscribe(flunder::flunder_client_t *client,
                               std::string_view topic, subscribe_cbk_t cbk) //
       -> int;
 
-  FLECS_EXPORT auto subscribe(FLECS::flunder_client_t *client,
+  FLECS_EXPORT auto subscribe(flunder::flunder_client_t *client,
                               std::string_view topic, subscribe_cbk_userp_t cbk,
                               const void *userp) //
       -> int;
@@ -102,7 +102,7 @@ public:
       std::variant<subscribe_cbk_t, subscribe_cbk_userp_t>;
 
   struct subscribe_ctx_t {
-    FLECS::flunder_client_t *_client;
+    flunder::flunder_client_t *_client;
     z_owned_subscriber_t _sub;
     subscribe_cbk_var_t _cbk;
     const void *_userp;
@@ -114,7 +114,7 @@ private:
                             const std::string &value) const //
       -> int;
 
-  FLECS_EXPORT auto subscribe(FLECS::flunder_client_t *client,
+  FLECS_EXPORT auto subscribe(flunder::flunder_client_t *client,
                               std::string_view topic, subscribe_cbk_var_t cbk,
                               const void *userp) //
       -> int;
@@ -134,4 +134,4 @@ auto ntp64_to_unix_time(std::uint64_t ntp_time) //
     -> uint64_t;
 
 } // namespace impl
-} // namespace FLECS
+} // namespace flunder

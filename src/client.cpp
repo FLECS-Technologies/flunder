@@ -16,7 +16,7 @@
 
 #include "impl/client.h"
 
-namespace FLECS {
+namespace flunder {
 
 flunder_client_t::flunder_client_t() : _impl{new impl::flunder_client_t{}} {}
 
@@ -165,42 +165,42 @@ auto swap(flunder_client_t &lhs, flunder_client_t &rhs) noexcept //
 extern "C" {
 
 FLECS_EXPORT void *flunder_client_new(void) {
-  return static_cast<void *>(new FLECS::flunder_client_t{});
+  return static_cast<void *>(new flunder::flunder_client_t{});
 }
 
 FLECS_EXPORT void flunder_client_destroy(void *flunder) {
-  delete static_cast<FLECS::flunder_client_t *>(flunder);
+  delete static_cast<flunder::flunder_client_t *>(flunder);
 }
 
 FLECS_EXPORT int flunder_connect(void *flunder, const char *host, int port) {
-  return static_cast<FLECS::flunder_client_t *>(flunder)->connect(host, port);
+  return static_cast<flunder::flunder_client_t *>(flunder)->connect(host, port);
 }
 
 FLECS_EXPORT int flunder_reconnect(void *flunder) {
-  return static_cast<FLECS::flunder_client_t *>(flunder)->reconnect();
+  return static_cast<flunder::flunder_client_t *>(flunder)->reconnect();
 }
 
 FLECS_EXPORT int flunder_disconnect(void *flunder) {
-  return static_cast<FLECS::flunder_client_t *>(flunder)->disconnect();
+  return static_cast<flunder::flunder_client_t *>(flunder)->disconnect();
 }
 
 FLECS_EXPORT int flunder_subscribe(void *flunder, const char *topic,
                                    flunder_subscribe_cbk_t cbk) {
   auto p = reinterpret_cast<void (*)(flunder_client_t *,
                                      const flunder_variable_t *)>(cbk);
-  return static_cast<FLECS::flunder_client_t *>(flunder)->subscribe(topic, p);
+  return static_cast<flunder::flunder_client_t *>(flunder)->subscribe(topic, p);
 }
 FLECS_EXPORT int flunder_subscribe_userp(void *flunder, const char *topic,
                                          flunder_subscribe_cbk_userp_t cbk,
                                          const void *userp) {
   auto p = reinterpret_cast<void (*)(
       flunder_client_t *, const flunder_variable_t *, const void *)>(cbk);
-  return static_cast<FLECS::flunder_client_t *>(flunder)->subscribe(topic, p,
+  return static_cast<flunder::flunder_client_t *>(flunder)->subscribe(topic, p,
                                                                     userp);
 }
 
 FLECS_EXPORT int flunder_unsubscribe(void *flunder, const char *topic) {
-  return static_cast<FLECS::flunder_client_t *>(flunder)->unsubscribe(topic);
+  return static_cast<flunder::flunder_client_t *>(flunder)->unsubscribe(topic);
 }
 
 FLECS_EXPORT int flunder_get(const void *flunder, const char *topic,
@@ -209,7 +209,7 @@ FLECS_EXPORT int flunder_get(const void *flunder, const char *topic,
   *vars = nullptr;
 
   auto [res, v] =
-      static_cast<const FLECS::flunder_client_t *>(flunder)->get(topic);
+      static_cast<const flunder::flunder_client_t *>(flunder)->get(topic);
   if (v.empty()) {
     return res;
   }
@@ -225,106 +225,106 @@ FLECS_EXPORT int flunder_get(const void *flunder, const char *topic,
 
 FLECS_EXPORT int flunder_publish_bool(const void *flunder, const char *topic,
                                       bool value) {
-  return static_cast<const FLECS::flunder_client_t *>(flunder)->publish(topic,
+  return static_cast<const flunder::flunder_client_t *>(flunder)->publish(topic,
                                                                         value);
 }
 
 FLECS_EXPORT int flunder_publish_int(const void *flunder, const char *topic,
                                      int value) {
-  return static_cast<const FLECS::flunder_client_t *>(flunder)->publish(topic,
+  return static_cast<const flunder::flunder_client_t *>(flunder)->publish(topic,
                                                                         value);
 }
 
 FLECS_EXPORT int flunder_publish_int8(const void *flunder, const char *topic,
                                       int8_t value) {
-  return static_cast<const FLECS::flunder_client_t *>(flunder)->publish(topic,
+  return static_cast<const flunder::flunder_client_t *>(flunder)->publish(topic,
                                                                         value);
 }
 
 FLECS_EXPORT int flunder_publish_int16(const void *flunder, const char *topic,
                                        int16_t value) {
-  return static_cast<const FLECS::flunder_client_t *>(flunder)->publish(topic,
+  return static_cast<const flunder::flunder_client_t *>(flunder)->publish(topic,
                                                                         value);
 }
 
 FLECS_EXPORT int flunder_publish_int32(const void *flunder, const char *topic,
                                        int32_t value) {
-  return static_cast<const FLECS::flunder_client_t *>(flunder)->publish(topic,
+  return static_cast<const flunder::flunder_client_t *>(flunder)->publish(topic,
                                                                         value);
 }
 
 FLECS_EXPORT int flunder_publish_int64(const void *flunder, const char *topic,
                                        int64_t value) {
-  return static_cast<const FLECS::flunder_client_t *>(flunder)->publish(topic,
+  return static_cast<const flunder::flunder_client_t *>(flunder)->publish(topic,
                                                                         value);
 }
 
 FLECS_EXPORT int flunder_publish_uint8(const void *flunder, const char *topic,
                                        uint8_t value) {
-  return static_cast<const FLECS::flunder_client_t *>(flunder)->publish(topic,
+  return static_cast<const flunder::flunder_client_t *>(flunder)->publish(topic,
                                                                         value);
 }
 
 FLECS_EXPORT int flunder_publish_uint16(const void *flunder, const char *topic,
                                         uint16_t value) {
-  return static_cast<const FLECS::flunder_client_t *>(flunder)->publish(topic,
+  return static_cast<const flunder::flunder_client_t *>(flunder)->publish(topic,
                                                                         value);
 }
 
 FLECS_EXPORT int flunder_publish_uint32(const void *flunder, const char *topic,
                                         uint32_t value) {
-  return static_cast<const FLECS::flunder_client_t *>(flunder)->publish(topic,
+  return static_cast<const flunder::flunder_client_t *>(flunder)->publish(topic,
                                                                         value);
 }
 
 FLECS_EXPORT int flunder_publish_uint64(const void *flunder, const char *topic,
                                         uint64_t value) {
-  return static_cast<const FLECS::flunder_client_t *>(flunder)->publish(topic,
+  return static_cast<const flunder::flunder_client_t *>(flunder)->publish(topic,
                                                                         value);
 }
 
 FLECS_EXPORT int flunder_publish_float(const void *flunder, const char *topic,
                                        float value) {
-  return static_cast<const FLECS::flunder_client_t *>(flunder)->publish(topic,
+  return static_cast<const flunder::flunder_client_t *>(flunder)->publish(topic,
                                                                         value);
 }
 
 FLECS_EXPORT int flunder_publish_double(const void *flunder, const char *topic,
                                         double value) {
-  return static_cast<const FLECS::flunder_client_t *>(flunder)->publish(topic,
+  return static_cast<const flunder::flunder_client_t *>(flunder)->publish(topic,
                                                                         value);
 }
 
 FLECS_EXPORT int flunder_publish_string(const void *flunder, const char *topic,
                                         const char *value) {
-  return static_cast<const FLECS::flunder_client_t *>(flunder)->publish(topic,
+  return static_cast<const flunder::flunder_client_t *>(flunder)->publish(topic,
                                                                         value);
 }
 
 FLECS_EXPORT int flunder_publish_raw(const void *flunder, const char *topic,
                                      const void *value, size_t payloadlen) {
-  return static_cast<const FLECS::flunder_client_t *>(flunder)->publish(
+  return static_cast<const flunder::flunder_client_t *>(flunder)->publish(
       topic, value, payloadlen);
 }
 
 FLECS_EXPORT int flunder_publish_custom(const void *flunder, const char *topic,
                                         const void *value, size_t payloadlen,
                                         const char *encoding) {
-  return static_cast<const FLECS::flunder_client_t *>(flunder)->publish(
+  return static_cast<const flunder::flunder_client_t *>(flunder)->publish(
       topic, value, payloadlen, std::string_view{encoding});
 }
 
 FLECS_EXPORT int flunder_add_mem_storage(void *flunder, const char *name,
                                          const char *topic) {
-  return static_cast<FLECS::flunder_client_t *>(flunder)->add_mem_storage(
+  return static_cast<flunder::flunder_client_t *>(flunder)->add_mem_storage(
       name, topic);
 }
 
 FLECS_EXPORT int flunder_remove_mem_storage(void *flunder, const char *name) {
-  return static_cast<FLECS::flunder_client_t *>(flunder)->remove_mem_storage(
+  return static_cast<flunder::flunder_client_t *>(flunder)->remove_mem_storage(
       name);
 }
 
 } // extern "C"
 
-} // namespace FLECS
+} // namespace flunder

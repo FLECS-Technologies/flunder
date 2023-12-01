@@ -123,19 +123,19 @@ auto val(std::string_view) {
 auto val(const char *) { return "Hello, FLECS!"; }
 
 template <typename T>
-void flunder_cbk_userp(FLECS::flunder_client_t *client,
-                       const FLECS::flunder_variable_t *var,
+void flunder_cbk_userp(flunder::flunder_client_t *client,
+                       const flunder::flunder_variable_t *var,
                        const void *userp) {
   std::fprintf(stderr, "Received topic %s\n", var->topic().data());
   ASSERT_EQ(client, userp);
   ASSERT_EQ(var->encoding(), encoding(T{}));
   ASSERT_EQ(var->topic(), topic(T{}));
-  ASSERT_EQ(var->len(), FLECS::stringify(val(T{})).length());
-  ASSERT_EQ(var->value(), FLECS::stringify(val(T{})));
+  ASSERT_EQ(var->len(), flunder::stringify(val(T{})).length());
+  ASSERT_EQ(var->value(), flunder::stringify(val(T{})));
 }
 
-void flunder_cbk(FLECS::flunder_client_t * /*client*/,
-                 const FLECS::flunder_variable_t *var) {
+void flunder_cbk(flunder::flunder_client_t * /*client*/,
+                 const flunder::flunder_variable_t *var) {
   std::fprintf(stderr, "Received topic %s\n", var->topic().data());
   if (var->topic() == topic((void *)(nullptr))) {
     ASSERT_EQ(var->encoding(), encoding((void *)(nullptr)));
@@ -148,18 +148,18 @@ void flunder_cbk(FLECS::flunder_client_t * /*client*/,
 }
 
 TEST(flunder, init) {
-  auto client_1 = FLECS::flunder_client_t{};
+  auto client_1 = flunder::flunder_client_t{};
   ASSERT_FALSE(client_1.is_connected());
 
   auto res = client_1.connect("172.17.0.1", 7447);
   ASSERT_EQ(res, 0);
   ASSERT_TRUE(client_1.is_connected());
 
-  auto client_2 = FLECS::flunder_client_t{std::move(client_1)};
+  auto client_2 = flunder::flunder_client_t{std::move(client_1)};
   ASSERT_FALSE(client_1.is_connected());
   ASSERT_TRUE(client_2.is_connected());
 
-  auto client_3 = FLECS::flunder_client_t{};
+  auto client_3 = flunder::flunder_client_t{};
   client_3 = std::move(client_2);
   ASSERT_FALSE(client_1.is_connected());
   ASSERT_FALSE(client_2.is_connected());
@@ -175,8 +175,8 @@ TEST(flunder, init) {
 }
 
 TEST(flunder, pub_sub) {
-  auto client_1 = FLECS::flunder_client_t{};
-  auto client_2 = FLECS::flunder_client_t{};
+  auto client_1 = flunder::flunder_client_t{};
+  auto client_2 = flunder::flunder_client_t{};
 
   client_1.connect("172.17.0.1", 7447);
   client_2.connect("172.17.0.1", 7447);
@@ -259,18 +259,18 @@ TEST(flunder, pub_sub) {
 }
 
 template <typename T>
-void flunder_cbk_c_userp(void *client, const FLECS::flunder_variable_t *var,
+void flunder_cbk_c_userp(void *client, const flunder::flunder_variable_t *var,
                          void *userp) {
   std::fprintf(stderr, "Received topic %s\n", var->topic().data());
   ASSERT_EQ(client, userp);
   ASSERT_EQ(std::string_view{flunder_variable_encoding(var)}, encoding(T{}));
   ASSERT_EQ(std::string_view{flunder_variable_topic(var)}, topic(T{}));
   ASSERT_EQ(std::string_view{flunder_variable_value(var)},
-            FLECS::stringify(val(T{})));
-  ASSERT_EQ(flunder_variable_len(var), FLECS::stringify(val(T{})).length());
+            flunder::stringify(val(T{})));
+  ASSERT_EQ(flunder_variable_len(var), flunder::stringify(val(T{})).length());
 }
 
-void flunder_cbk_c(void * /*client*/, const FLECS::flunder_variable_t *var) {
+void flunder_cbk_c(void * /*client*/, const flunder::flunder_variable_t *var) {
   std::fprintf(stderr, "Received topic %s\n", var->topic().data());
   if (var->topic() == topic((void *)(nullptr))) {
     ASSERT_EQ(var->encoding(), encoding((void *)(nullptr)));
@@ -283,7 +283,7 @@ void flunder_cbk_c(void * /*client*/, const FLECS::flunder_variable_t *var) {
 }
 
 TEST(flunder, c) {
-  using namespace FLECS;
+  using namespace flunder;
 
   auto client = flunder_client_new();
   ASSERT_NE(client, nullptr);

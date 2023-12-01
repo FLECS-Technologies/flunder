@@ -41,7 +41,7 @@
 #include "core/global/types/type_traits.h"
 #include "util/string/string_utils.h"
 
-namespace FLECS {
+namespace flunder {
 namespace impl {
 class flunder_client_t;
 } // namespace impl
@@ -244,5 +244,5 @@ FLECS_EXPORT int flunder_remove_mem_storage(void* flunder, const char* name);
 
 #ifdef __cplusplus
 } // extern "C"
-} // namespace FLECS
+} // namespace flunder
 #endif // __cplusplus

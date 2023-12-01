@@ -17,7 +17,7 @@
 #include <cstring>
 #include <memory>
 
-namespace FLECS {
+namespace flunder {
 
 /** @todo */
 template <class... Ts>
@@ -109,7 +109,7 @@ FLECS_EXPORT auto flunder_variable_t::is_owned() const noexcept //
     return std::holds_alternative<std::string>(_topic);
 }
 
-} // namespace FLECS
+} // namespace flunder
 
 extern "C" {
 
