@@ -28,74 +28,84 @@ namespace {
 bool g_stop;
 } // namespace
 
-void signal_handler(int) { g_stop = 1; }
-
-void flunder_receive_callback(flunder::flunder_client_t *client,
-                              const flunder::flunder_variable_t *var) {
-  const auto now =
-      std::chrono::high_resolution_clock::now().time_since_epoch().count();
-  std::fprintf(stdout,
-               "Received flunder message for topic %s on client %p with length "
-               "%zu @%" PRIi64 "\n",
-               var->topic().data(), client, var->len(), now);
-
-  if (var->topic() == "/flecs/flunder/cpp/int") {
-    const auto i = std::atoll(var->value().data());
-    std::fprintf(stdout, "\tValue: %lld\n", i);
-  } else if (var->topic() == "/flecs/flunder/cpp/double") {
-    const auto d = std::atof(var->value().data());
-    std::fprintf(stdout, "\tValue: %lf\n", d);
-  } else if (var->topic() == "/flecs/flunder/cpp/string") {
-    std::fprintf(stdout, "\tValue: %s\n", var->value().data());
-  } else if (var->topic() == "/flecs/flunder/cpp/timestamp") {
-    const auto t1 = std::stoll(var->value().data());
-    const auto diff = now - t1;
-    std::fprintf(stdout, "\tMessage sent @%lld (%lld ns ago)\n", t1, diff);
-  }
+void signal_handler(int)
+{
+    g_stop = 1;
 }
 
-void flunder_receive_callback_userp(flunder::flunder_client_t *client,
-                                    const flunder::flunder_variable_t *var,
-                                    const void *userp) {
-  const auto timestamp =
-      std::chrono::high_resolution_clock::now().time_since_epoch().count();
-  std::fprintf(stdout,
-               "Received flunder message for topic %s on client %p with length "
-               "%zu and userdata %s "
-               "@%" PRIi64 "\n",
-               var->topic().data(), client, var->len(), (const char *)userp,
-               timestamp);
+void flunder_receive_callback(flunder::client_t* client, const flunder::variable_t* var)
+{
+    const auto now = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    std::fprintf(
+        stdout,
+        "Received flunder message for topic %s on client %p with length "
+        "%zu @%" PRIi64 "\n",
+        var->topic().data(),
+        client,
+        var->len(),
+        now);
+
+    if (var->topic() == "/flecs/flunder/cpp/int") {
+        const auto i = std::atoll(var->value().data());
+        std::fprintf(stdout, "\tValue: %lld\n", i);
+    } else if (var->topic() == "/flecs/flunder/cpp/double") {
+        const auto d = std::atof(var->value().data());
+        std::fprintf(stdout, "\tValue: %lf\n", d);
+    } else if (var->topic() == "/flecs/flunder/cpp/string") {
+        std::fprintf(stdout, "\tValue: %s\n", var->value().data());
+    } else if (var->topic() == "/flecs/flunder/cpp/timestamp") {
+        const auto t1 = std::stoll(var->value().data());
+        const auto diff = now - t1;
+        std::fprintf(stdout, "\tMessage sent @%lld (%lld ns ago)\n", t1, diff);
+    }
 }
 
-int main() {
-  signal(SIGINT, &signal_handler);
-  signal(SIGTERM, &signal_handler);
+void flunder_receive_callback_userp(
+    flunder::client_t* client, const flunder::variable_t* var, const void* userp)
+{
+    const auto timestamp = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    std::fprintf(
+        stdout,
+        "Received flunder message for topic %s on client %p with length "
+        "%zu and userdata %s "
+        "@%" PRIi64 "\n",
+        var->topic().data(),
+        client,
+        var->len(),
+        (const char*)userp,
+        timestamp);
+}
 
-  auto flunder_client = flunder::flunder_client_t{};
+int main()
+{
+    signal(SIGINT, &signal_handler);
+    signal(SIGTERM, &signal_handler);
 
-  flunder_client.connect();
-  flunder_client.add_mem_storage("flunder-cpp", "/flecs/flunder/**");
+    auto flunder_client = flunder::client_t{};
 
-  flunder_client.subscribe("/flecs/flunder/cpp/**", &flunder_receive_callback);
-  const char *userdata = "Hello, world!";
-  flunder_client.subscribe("/flecs/flunder/external",
-                           &flunder_receive_callback_userp,
-                           (const void *)userdata);
+    flunder_client.connect();
+    flunder_client.add_mem_storage("flunder-cpp", "/flecs/flunder/**");
 
-  while (!g_stop) {
-    const auto i = 1234;
-    flunder_client.publish("/flecs/flunder/cpp/int", i);
+    flunder_client.subscribe("/flecs/flunder/cpp/**", &flunder_receive_callback);
+    const char* userdata = "Hello, world!";
+    flunder_client.subscribe(
+        "/flecs/flunder/external",
+        &flunder_receive_callback_userp,
+        (const void*)userdata);
 
-    const auto d = 3.14159;
-    flunder_client.publish("/flecs/flunder/cpp/double", d);
+    while (!g_stop) {
+        const auto i = 1234;
+        flunder_client.publish("/flecs/flunder/cpp/int", i);
 
-    const auto str = "Hello, world!";
-    flunder_client.publish("/flecs/flunder/cpp/string", str);
+        const auto d = 3.14159;
+        flunder_client.publish("/flecs/flunder/cpp/double", d);
 
-    const auto t =
-        std::chrono::high_resolution_clock::now().time_since_epoch().count();
-    flunder_client.publish("/flecs/flunder/cpp/timestamp", t);
+        const auto str = "Hello, world!";
+        flunder_client.publish("/flecs/flunder/cpp/string", str);
 
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-  }
+        const auto t = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        flunder_client.publish("/flecs/flunder/cpp/timestamp", t);
+
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+    }
 }

@@ -43,7 +43,7 @@
 
 namespace flunder {
 namespace impl {
-class flunder_client_t;
+class client_t;
 } // namespace impl
 
 /*! DNS name of the default flunder broker */
@@ -51,32 +51,32 @@ constexpr const char* FLUNDER_HOST = "flecs-flunder";
 /*! Port of the default flunder broker */
 constexpr const int FLUNDER_PORT = 7447;
 
-class flunder_client_t
+class client_t
 {
 public:
     /*! @brief Constructor
      */
-    FLECS_EXPORT flunder_client_t();
+    FLECS_EXPORT client_t();
 
     /*! @brief Copy constructor (deleted)
      */
-    FLECS_EXPORT flunder_client_t(const flunder_client_t&) = delete;
+    FLECS_EXPORT client_t(const client_t&) = delete;
 
     /*! @brief Move constructor
      */
-    FLECS_EXPORT flunder_client_t(flunder_client_t&& other);
+    FLECS_EXPORT client_t(client_t&& other);
 
     /*! @brief copy-assignment operator (deleted)
      */
-    FLECS_EXPORT flunder_client_t& operator=(const flunder_client_t&) = delete;
+    FLECS_EXPORT client_t& operator=(const client_t&) = delete;
 
     /*! @brief move-assignment operator
      */
-    FLECS_EXPORT flunder_client_t& operator=(flunder_client_t&& other);
+    FLECS_EXPORT client_t& operator=(client_t&& other);
 
     /*! @brief Destructor
      */
-    FLECS_EXPORT ~flunder_client_t();
+    FLECS_EXPORT ~client_t();
 
     FLECS_EXPORT auto connect() //
         -> int;
@@ -118,9 +118,8 @@ public:
         std::string_view topic, const void* data, size_t len, std::string_view encoding) const //
         -> int;
 
-    using subscribe_cbk_t = std::function<void(flunder_client_t*, const flunder_variable_t*)>;
-    using subscribe_cbk_userp_t =
-        std::function<void(flunder_client_t*, const flunder_variable_t*, const void*)>;
+    using subscribe_cbk_t = std::function<void(client_t*, const variable_t*)>;
+    using subscribe_cbk_userp_t = std::function<void(client_t*, const variable_t*, const void*)>;
 
     /* subscribe to live data */
     FLECS_EXPORT auto subscribe(std::string_view topic, subscribe_cbk_t cbk) //
@@ -140,13 +139,13 @@ public:
 
     /* get data from storage */
     FLECS_EXPORT auto get(std::string_view topic) const //
-        -> std::tuple<int, std::vector<flunder_variable_t> >;
+        -> std::tuple<int, std::vector<variable_t> >;
     /* delete data from storage */
     FLECS_EXPORT auto erase(std::string_view topic) //
         -> int;
 
 private:
-    FLECS_EXPORT friend auto swap(flunder_client_t& lhs, flunder_client_t& rhs) noexcept //
+    FLECS_EXPORT friend auto swap(client_t& lhs, client_t& rhs) noexcept //
         -> void;
 
     FLECS_EXPORT auto publish_bool(std::string_view topic, const std::string& value) const //
@@ -165,25 +164,25 @@ private:
         std::string_view topic, const void* data, size_t len, std::string_view encoding) const //
         -> int;
 
-    std::unique_ptr<impl::flunder_client_t> _impl;
+    std::unique_ptr<impl::client_t> _impl;
 };
 
 template <typename T>
-auto flunder_client_t::publish(std::string_view topic, const T& value) const //
+auto client_t::publish(std::string_view topic, const T& value) const //
     -> std::enable_if_t<std::is_integral_v<T> && !std::is_same_v<T, bool>, int>
 {
     return publish_int(topic, sizeof(T), std::is_signed_v<T>, stringify(value));
 }
 
 template <typename T>
-auto flunder_client_t::publish(std::string_view topic, const T& value) const //
+auto client_t::publish(std::string_view topic, const T& value) const //
     -> std::enable_if_t<std::is_floating_point_v<T>, int>
 {
     return publish_float(topic, sizeof(T), stringify(value));
 }
 
 template <typename T>
-auto flunder_client_t::publish(std::string_view topic, const T& value) const //
+auto client_t::publish(std::string_view topic, const T& value) const //
     -> std::enable_if_t<is_std_string_v<T> || is_std_string_view_v<T>, int>
 {
     return publish_string(topic, std::string{value});
@@ -192,8 +191,8 @@ auto flunder_client_t::publish(std::string_view topic, const T& value) const //
 extern "C" {
 #endif // __cplusplus
 
-typedef void (*flunder_subscribe_cbk_t)(void*, const flunder_variable_t*);
-typedef void (*flunder_subscribe_cbk_userp_t)(void*, const flunder_variable_t*, void*);
+typedef void (*flunder_subscribe_cbk_t)(void*, const variable_t*);
+typedef void (*flunder_subscribe_cbk_userp_t)(void*, const variable_t*, void*);
 
 FLECS_EXPORT void* flunder_client_new(void);
 
@@ -212,8 +211,7 @@ FLECS_EXPORT int flunder_subscribe_userp(
 FLECS_EXPORT int flunder_unsubscribe(void* flunder, const char* topic);
 
 /** make sure to call flunder_variable_list_destroy with the exact values returned */
-FLECS_EXPORT int flunder_get(
-    const void* flunder, const char* topic, flunder_variable_t** vars, size_t* n);
+FLECS_EXPORT int flunder_get(const void* flunder, const char* topic, variable_t** vars, size_t* n);
 
 FLECS_EXPORT int flunder_publish_bool(const void* flunder, const char* topic, bool value);
 

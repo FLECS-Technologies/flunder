@@ -28,103 +28,120 @@
 namespace flunder {
 namespace impl {
 
-class flunder_client_t {
+class client_t
+{
 public:
-  flunder_client_t();
-  ~flunder_client_t();
+    client_t();
+    ~client_t();
 
-  FLECS_EXPORT auto connect(std::string_view host, int port) //
-      -> int;
+    FLECS_EXPORT auto connect(std::string_view host, int port) //
+        -> int;
 
-  FLECS_EXPORT auto reconnect() //
-      -> int;
+    FLECS_EXPORT auto reconnect() //
+        -> int;
 
-  FLECS_EXPORT auto is_connected() const noexcept //
-      -> bool;
+    FLECS_EXPORT auto is_connected() const noexcept //
+        -> bool;
 
-  FLECS_EXPORT auto disconnect() //
-      -> int;
+    FLECS_EXPORT auto disconnect() //
+        -> int;
 
-  FLECS_EXPORT auto publish_bool(std::string_view topic,
-                                 const std::string &value) const //
-      -> int;
+    FLECS_EXPORT auto publish_bool(
+        std::string_view topic,
+        const std::string& value) const //
+        -> int;
 
-  FLECS_EXPORT auto publish_int(std::string_view topic, size_t size,
-                                bool is_signed,
-                                const std::string &value) const //
-      -> int;
+    FLECS_EXPORT auto publish_int(
+        std::string_view topic,
+        size_t size,
+        bool is_signed,
+        const std::string& value) const //
+        -> int;
 
-  FLECS_EXPORT auto publish_float(std::string_view topic, size_t size,
-                                  const std::string &value) const //
-      -> int;
+    FLECS_EXPORT auto publish_float(
+        std::string_view topic,
+        size_t size,
+        const std::string& value) const //
+        -> int;
 
-  FLECS_EXPORT auto publish_string(std::string_view topic,
-                                   const std::string &value) const //
-      -> int;
+    FLECS_EXPORT auto publish_string(
+        std::string_view topic,
+        const std::string& value) const //
+        -> int;
 
-  FLECS_EXPORT auto publish_raw(std::string_view topic, const void *payload,
-                                size_t payloadlen) const //
-      -> int;
+    FLECS_EXPORT auto publish_raw(
+        std::string_view topic,
+        const void* payload,
+        size_t payloadlen) const //
+        -> int;
 
-  FLECS_EXPORT auto publish_custom(std::string_view topic, const void *payload,
-                                   size_t payloadlen,
-                                   std::string_view encoding) const //
-      -> int;
+    FLECS_EXPORT auto publish_custom(
+        std::string_view topic,
+        const void* payload,
+        size_t payloadlen,
+        std::string_view encoding) const //
+        -> int;
 
-  using subscribe_cbk_t = flunder::flunder_client_t::subscribe_cbk_t;
-  using subscribe_cbk_userp_t = flunder::flunder_client_t::subscribe_cbk_userp_t;
-  FLECS_EXPORT auto subscribe(flunder::flunder_client_t *client,
-                              std::string_view topic, subscribe_cbk_t cbk) //
-      -> int;
+    using subscribe_cbk_t = flunder::client_t::subscribe_cbk_t;
+    using subscribe_cbk_userp_t = flunder::client_t::subscribe_cbk_userp_t;
+    FLECS_EXPORT auto subscribe(
+        flunder::client_t* client, std::string_view topic, subscribe_cbk_t cbk) //
+        -> int;
 
-  FLECS_EXPORT auto subscribe(flunder::flunder_client_t *client,
-                              std::string_view topic, subscribe_cbk_userp_t cbk,
-                              const void *userp) //
-      -> int;
+    FLECS_EXPORT auto subscribe(
+        flunder::client_t* client,
+        std::string_view topic,
+        subscribe_cbk_userp_t cbk,
+        const void* userp) //
+        -> int;
 
-  FLECS_EXPORT auto unsubscribe(std::string_view topic) //
-      -> int;
+    FLECS_EXPORT auto unsubscribe(std::string_view topic) //
+        -> int;
 
-  FLECS_EXPORT auto add_mem_storage(std::string topic, std::string_view name) //
-      -> int;
+    FLECS_EXPORT auto add_mem_storage(std::string topic, std::string_view name) //
+        -> int;
 
-  FLECS_EXPORT auto remove_mem_storage(std::string name) //
-      -> int;
+    FLECS_EXPORT auto remove_mem_storage(std::string name) //
+        -> int;
 
-  FLECS_EXPORT auto get(std::string_view topic) const //
-      -> std::tuple<int, std::vector<flunder_variable_t>>;
+    FLECS_EXPORT auto get(std::string_view topic) const //
+        -> std::tuple<int, std::vector<variable_t>>;
 
-  FLECS_EXPORT auto erase(std::string_view topic) //
-      -> int;
+    FLECS_EXPORT auto erase(std::string_view topic) //
+        -> int;
 
-  /*! Function pointer to receive callback */
-  using subscribe_cbk_var_t =
-      std::variant<subscribe_cbk_t, subscribe_cbk_userp_t>;
+    /*! Function pointer to receive callback */
+    using subscribe_cbk_var_t = std::variant<subscribe_cbk_t, subscribe_cbk_userp_t>;
 
-  struct subscribe_ctx_t {
-    flunder::flunder_client_t *_client;
-    z_owned_subscriber_t _sub;
-    subscribe_cbk_var_t _cbk;
-    const void *_userp;
-    bool _once;
-  };
+    struct subscribe_ctx_t
+    {
+        flunder::client_t* _client;
+        z_owned_subscriber_t _sub;
+        subscribe_cbk_var_t _cbk;
+        const void* _userp;
+        bool _once;
+    };
 
 private:
-  FLECS_EXPORT auto publish(std::string_view topic, z_encoding_t encoding,
-                            const std::string &value) const //
-      -> int;
+    FLECS_EXPORT auto publish(
+        std::string_view topic,
+        z_encoding_t encoding,
+        const std::string& value) const //
+        -> int;
 
-  FLECS_EXPORT auto subscribe(flunder::flunder_client_t *client,
-                              std::string_view topic, subscribe_cbk_var_t cbk,
-                              const void *userp) //
-      -> int;
+    FLECS_EXPORT auto subscribe(
+        flunder::client_t* client,
+        std::string_view topic,
+        subscribe_cbk_var_t cbk,
+        const void* userp) //
+        -> int;
 
-  std::set<std::string> _mem_storages;
+    std::set<std::string> _mem_storages;
 
-  std::string _host;
-  std::uint16_t _port;
-  z_owned_session_t _z_session;
-  std::map<std::string, subscribe_ctx_t> _subscriptions;
+    std::string _host;
+    std::uint16_t _port;
+    z_owned_session_t _z_session;
+    std::map<std::string, subscribe_ctx_t> _subscriptions;
 };
 
 auto to_string(z_encoding_prefix_t prefix, std::string_view suffix) //

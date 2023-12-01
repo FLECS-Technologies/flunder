@@ -26,7 +26,7 @@ void signal_handler(int signum)
     g_stop = 1;
 }
 
-void print_variables(const flunder_variable_t* var, size_t n)
+void print_variables(const variable_t* var, size_t n)
 {
     for (size_t i = 0; i < n; ++i) {
         fprintf(
@@ -47,7 +47,7 @@ void print_variables(const flunder_variable_t* var, size_t n)
     }
 }
 
-void flunder_subscribe_callback(void* client, const flunder_variable_t* var)
+void flunder_subscribe_callback(void* client, const variable_t* var)
 {
     fprintf(stdout, "Received flunder message on client %p!\n", client);
     print_variables(var, 1);
@@ -73,7 +73,7 @@ int main(void)
         flunder_publish_float(flunder_client, "/flecs/flunder/c/float", f);
         sleep(5);
 
-        flunder_variable_t* vars;
+        variable_t* vars;
         size_t n;
         flunder_get(flunder_client, "**", &vars, &n);
         fprintf(stdout, "get() result:\n");

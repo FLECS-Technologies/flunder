@@ -28,14 +28,14 @@ struct overload : Ts...
 template <class... Ts>
 overload(Ts...) -> overload<Ts...>;
 
-FLECS_EXPORT flunder_variable_t::flunder_variable_t()
+FLECS_EXPORT variable_t::variable_t()
     : _topic{}
     , _value{}
     , _encoding{}
     , _timestamp{}
 {}
 
-FLECS_EXPORT flunder_variable_t::flunder_variable_t(
+FLECS_EXPORT variable_t::variable_t(
     std::string key, std::string value, std::string encoding, std::string timestamp)
     : _topic(std::move(key))
     , _value(std::move(value))
@@ -43,7 +43,7 @@ FLECS_EXPORT flunder_variable_t::flunder_variable_t(
     , _timestamp(std::move(timestamp))
 {}
 
-FLECS_EXPORT flunder_variable_t::flunder_variable_t(
+FLECS_EXPORT variable_t::variable_t(
     const char* key, const char* value, const char* encoding, const char* timestamp)
     : _topic(std::string_view{key})
     , _value(std::string_view{value})
@@ -62,37 +62,37 @@ auto as_string_view(const std::variant<Ts...>& var) //
         var);
 }
 
-FLECS_EXPORT auto flunder_variable_t::topic() const noexcept //
+FLECS_EXPORT auto variable_t::topic() const noexcept //
     -> std::string_view
 {
     return as_string_view(_topic);
 }
 
-FLECS_EXPORT auto flunder_variable_t::value() const noexcept //
+FLECS_EXPORT auto variable_t::value() const noexcept //
     -> std::string_view
 {
     return as_string_view(_value);
 }
 
-FLECS_EXPORT auto flunder_variable_t::len() const noexcept //
+FLECS_EXPORT auto variable_t::len() const noexcept //
     -> std::size_t
 {
     return value().size();
 }
 
-FLECS_EXPORT auto flunder_variable_t::encoding() const noexcept //
+FLECS_EXPORT auto variable_t::encoding() const noexcept //
     -> std::string_view
 {
     return as_string_view(_encoding);
 }
 
-FLECS_EXPORT auto flunder_variable_t::timestamp() const noexcept //
+FLECS_EXPORT auto variable_t::timestamp() const noexcept //
     -> std::string_view
 {
     return as_string_view(_timestamp);
 }
 
-FLECS_EXPORT auto flunder_variable_t::own() //
+FLECS_EXPORT auto variable_t::own() //
     -> void
 {
     if (!is_owned()) {
@@ -103,7 +103,7 @@ FLECS_EXPORT auto flunder_variable_t::own() //
     }
 }
 
-FLECS_EXPORT auto flunder_variable_t::is_owned() const noexcept //
+FLECS_EXPORT auto variable_t::is_owned() const noexcept //
     -> bool
 {
     return std::holds_alternative<std::string>(_topic);
@@ -113,60 +113,60 @@ FLECS_EXPORT auto flunder_variable_t::is_owned() const noexcept //
 
 extern "C" {
 
-FLECS_EXPORT flunder_variable_t* flunder_variable_new(
+FLECS_EXPORT variable_t* flunder_variable_new(
     const char* key, const char* value, const char* encoding, const char* timestamp)
 {
-    return new flunder_variable_t{key, value, encoding, timestamp};
+    return new variable_t{key, value, encoding, timestamp};
 }
 
-FLECS_EXPORT flunder_variable_t* flunder_variable_clone(const flunder_variable_t* other)
+FLECS_EXPORT variable_t* flunder_variable_clone(const variable_t* other)
 {
-    return new flunder_variable_t{*other};
+    return new variable_t{*other};
 }
 
-FLECS_EXPORT flunder_variable_t* flunder_variable_move(flunder_variable_t* other)
+FLECS_EXPORT variable_t* flunder_variable_move(variable_t* other)
 {
-    return new flunder_variable_t{std::move(*other)};
+    return new variable_t{std::move(*other)};
 }
 
-FLECS_EXPORT const char* flunder_variable_topic(const flunder_variable_t* var)
+FLECS_EXPORT const char* flunder_variable_topic(const variable_t* var)
 {
     return var->topic().data();
 }
 
-FLECS_EXPORT const char* flunder_variable_value(const flunder_variable_t* var)
+FLECS_EXPORT const char* flunder_variable_value(const variable_t* var)
 {
     return var->value().data();
 }
 
-FLECS_EXPORT size_t flunder_variable_len(const flunder_variable_t* var)
+FLECS_EXPORT size_t flunder_variable_len(const variable_t* var)
 {
     return var->len();
 }
 
-FLECS_EXPORT const char* flunder_variable_encoding(const flunder_variable_t* var)
+FLECS_EXPORT const char* flunder_variable_encoding(const variable_t* var)
 {
     return var->encoding().data();
 }
 
-FLECS_EXPORT const char* flunder_variable_timestamp(const flunder_variable_t* var)
+FLECS_EXPORT const char* flunder_variable_timestamp(const variable_t* var)
 {
     return var->timestamp().data();
 }
 
-FLECS_EXPORT void flunder_variable_destroy(flunder_variable_t* var)
+FLECS_EXPORT void flunder_variable_destroy(variable_t* var)
 {
     delete var;
 }
 
-FLECS_EXPORT void flunder_variable_list_destroy(flunder_variable_t* vars, size_t n)
+FLECS_EXPORT void flunder_variable_list_destroy(variable_t* vars, size_t n)
 {
     if (vars && n > 0) {
         delete[] vars;
     }
 }
 
-FLECS_EXPORT const flunder_variable_t* flunder_variable_next(const flunder_variable_t* var)
+FLECS_EXPORT const variable_t* flunder_variable_next(const variable_t* var)
 {
     return ++var;
 }

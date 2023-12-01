@@ -23,14 +23,14 @@
 
 namespace flunder {
 
-class flunder_variable_t
+class variable_t
 {
 public:
-    FLECS_EXPORT flunder_variable_t();
+    FLECS_EXPORT variable_t();
 
-    FLECS_EXPORT flunder_variable_t(
+    FLECS_EXPORT variable_t(
         std::string topic, std::string value, std::string encoding, std::string timestamp);
-    FLECS_EXPORT flunder_variable_t(
+    FLECS_EXPORT variable_t(
         const char* topic, const char* value, const char* encoding, const char* timestamp);
 
     FLECS_EXPORT auto topic() const noexcept //
@@ -63,32 +63,32 @@ private:
 #include <stdbool.h>
 #include <stdlib.h>
 
-typedef struct flunder_variable_t flunder_variable_t;
+typedef struct variable_t variable_t;
 
 #endif //__cplusplus
 
 #ifdef __cplusplus
 extern "C" {
 
-using flunder_variable_t = flunder::flunder_variable_t;
+using variable_t = flunder::variable_t;
 #endif //__cplusplus
 
-FLECS_EXPORT flunder_variable_t* flunder_variable_new(
+FLECS_EXPORT variable_t* flunder_variable_new(
     const char* key, const char* value, const char* encoding, const char* timestamp);
 
-FLECS_EXPORT flunder_variable_t* flunder_variable_clone(const flunder_variable_t* other);
+FLECS_EXPORT variable_t* flunder_variable_clone(const variable_t* other);
 
-FLECS_EXPORT flunder_variable_t* flunder_variable_move(flunder_variable_t* other);
+FLECS_EXPORT variable_t* flunder_variable_move(variable_t* other);
 
-FLECS_EXPORT const char* flunder_variable_topic(const flunder_variable_t* var);
-FLECS_EXPORT const char* flunder_variable_value(const flunder_variable_t* var);
-FLECS_EXPORT size_t flunder_variable_len(const flunder_variable_t* var);
-FLECS_EXPORT const char* flunder_variable_encoding(const flunder_variable_t* var);
-FLECS_EXPORT const char* flunder_variable_timestamp(const flunder_variable_t* var);
+FLECS_EXPORT const char* flunder_variable_topic(const variable_t* var);
+FLECS_EXPORT const char* flunder_variable_value(const variable_t* var);
+FLECS_EXPORT size_t flunder_variable_len(const variable_t* var);
+FLECS_EXPORT const char* flunder_variable_encoding(const variable_t* var);
+FLECS_EXPORT const char* flunder_variable_timestamp(const variable_t* var);
 
-FLECS_EXPORT void flunder_variable_destroy(flunder_variable_t* var);
-FLECS_EXPORT void flunder_variable_list_destroy(flunder_variable_t* vars, size_t n);
-FLECS_EXPORT const flunder_variable_t* flunder_variable_next(const flunder_variable_t* var);
+FLECS_EXPORT void flunder_variable_destroy(variable_t* var);
+FLECS_EXPORT void flunder_variable_list_destroy(variable_t* vars, size_t n);
+FLECS_EXPORT const variable_t* flunder_variable_next(const variable_t* var);
 
 #ifdef __cplusplus
 } // extern "C"
