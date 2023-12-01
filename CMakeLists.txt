@@ -15,15 +15,15 @@
 project(flunder)
 
 set(SRC_LIB
-    src/flunder_client.cpp
-    src/flunder_variable.cpp
-    src/impl/flunder_client_impl.cpp
+    src/client.cpp
+    src/variable.cpp
+    src/impl/client.cpp
 )
 
 set(HEADER_LIB
-    flunder_client.h
-    flunder_variable.h
-    impl/flunder_client_impl.h
+    include/flunder/client.h
+    include/flunder/variable.h
+    include/flunder/impl/client.h
 )
 
 add_library(flunder OBJECT ${SRC_LIB} ${HEADER_LIB})
@@ -37,7 +37,7 @@ add_library(flunder.static STATIC $<TARGET_OBJECTS:flunder>)
 set_target_properties(flunder.static PROPERTIES OUTPUT_NAME FLECS.flunder)
 
 target_include_directories(flunder PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 target_link_libraries(flunder PRIVATE

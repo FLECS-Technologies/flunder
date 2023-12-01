@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "flunder/flunder_client.h"
+#include "flunder/client.h"
 
 static int g_stop;
 

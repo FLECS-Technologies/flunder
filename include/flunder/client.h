@@ -24,7 +24,7 @@
 #define FLECS_FLUNDER_PORT 7447
 #endif // __cplusplus
 
-#include "flunder_variable.h"
+#include "flunder/variable.h"
 
 #ifndef __cplusplus
 #include <inttypes.h>
