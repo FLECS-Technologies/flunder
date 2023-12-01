@@ -12,7 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+cmake_minimum_required(VERSION 3.21)
+
+include(${CMAKE_SOURCE_DIR}/flecs-build/cmake/flecs-build.cmake)
+
 project(flunder)
+
+add_subdirectory(flecs-external)
+
+if(FLECS_BUILD_TESTS)
+    include(CTest)
+    add_compile_options(-fprofile-arcs -ftest-coverage)
+    add_link_options(-lgcov --coverage)
+    add_definitions(-DFLECS_UNIT_TEST)
+    add_definitions(-DFLECS_CONSTEXPR_UNLESS_TESTED=)
+    add_definitions(-DFLECS_FINAL_UNLESS_TESTED=)
+else()
+    add_definitions(-DFLECS_CONSTEXPR_UNLESS_TESTED=constexpr)
+    add_definitions(-DFLECS_FINAL_UNLESS_TESTED=final)
+endif()
 
 set(SRC_LIB
     src/client.cpp
@@ -31,10 +49,10 @@ add_library(flunder OBJECT ${SRC_LIB} ${HEADER_LIB})
 set_property(TARGET flunder PROPERTY POSITION_INDEPENDENT_CODE 1)
 
 add_library(flunder.shared SHARED $<TARGET_OBJECTS:flunder>)
-set_target_properties(flunder.shared PROPERTIES OUTPUT_NAME FLECS.flunder)
+set_target_properties(flunder.shared PROPERTIES OUTPUT_NAME flunder)
 
 add_library(flunder.static STATIC $<TARGET_OBJECTS:flunder>)
-set_target_properties(flunder.static PROPERTIES OUTPUT_NAME FLECS.flunder)
+set_target_properties(flunder.static PROPERTIES OUTPUT_NAME flunder_static)
 
 target_include_directories(flunder PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -49,6 +67,9 @@ target_link_libraries(flunder.static INTERFACE
     cpr::cpr
     zenohc::lib
 )
+target_include_directories(flunder.static INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
 
 target_link_libraries(flunder.shared
     PRIVATE
@@ -59,6 +80,9 @@ target_link_libraries(flunder.shared
 
 target_link_libraries(flunder.shared INTERFACE
     zenohc::lib
+)
+target_include_directories(flunder.shared INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 add_subdirectory(examples)
