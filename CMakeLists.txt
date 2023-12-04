@@ -18,7 +18,9 @@ include(${CMAKE_SOURCE_DIR}/flecs-build/cmake/flecs-build.cmake)
 
 project(flunder)
 
-add_subdirectory(flecs-external)
+if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
+    add_subdirectory(flecs-external)
+endif()
 
 if(FLECS_BUILD_TESTS)
     include(CTest)
