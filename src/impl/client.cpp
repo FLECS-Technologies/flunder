@@ -16,8 +16,11 @@
 
 #include <cpr/cpr.h>
 
+#include <algorithm>
+#include <array>
 #include <nlohmann/json.hpp>
 #include <thread>
+#include <tuple>
 
 #include "flunder/to_string.h"
 
@@ -60,74 +63,60 @@ static auto lib_subscribe_callback(const z_sample_t* sample, void* arg) //
         ctx->_cbk);
 }
 
+static constexpr auto strings = std::array<std::tuple<z_encoding_prefix_t, std::string_view>, 21>{{
+    {Z_ENCODING_PREFIX_EMPTY, ""},
+    {Z_ENCODING_PREFIX_APP_OCTET_STREAM, "application/octet-stream"},
+    {Z_ENCODING_PREFIX_APP_CUSTOM, "application/"},
+    {Z_ENCODING_PREFIX_TEXT_PLAIN, "text/plain"},
+    {Z_ENCODING_PREFIX_APP_PROPERTIES, "application/properties"},
+    {Z_ENCODING_PREFIX_APP_JSON, "application/json"},
+    {Z_ENCODING_PREFIX_APP_SQL, "application/sql"},
+    {Z_ENCODING_PREFIX_APP_INTEGER, "application/integer"},
+    {Z_ENCODING_PREFIX_APP_FLOAT, "application/float"},
+    {Z_ENCODING_PREFIX_APP_XML, "application/xml"},
+    {Z_ENCODING_PREFIX_APP_XHTML_XML, "application/xhtml+xml"},
+    {Z_ENCODING_PREFIX_APP_X_WWW_FORM_URLENCODED, "application/x-www-form-urlencoded"},
+    {Z_ENCODING_PREFIX_TEXT_JSON, "text/json"},
+    {Z_ENCODING_PREFIX_TEXT_HTML, "text/html"},
+    {Z_ENCODING_PREFIX_TEXT_XML, "text/xml"},
+    {Z_ENCODING_PREFIX_TEXT_CSS, "text/css"},
+    {Z_ENCODING_PREFIX_TEXT_CSV, "text/csv"},
+    {Z_ENCODING_PREFIX_TEXT_JAVASCRIPT, "text/javascript"},
+    {Z_ENCODING_PREFIX_IMAGE_JPEG, "image/jpeg"},
+    {Z_ENCODING_PREFIX_IMAGE_PNG, "image/png"},
+    {Z_ENCODING_PREFIX_IMAGE_GIF, "image/gif"},
+}};
+
 auto to_string(z_encoding_prefix_t prefix, std::string_view suffix) //
     -> std::string
 {
-    const auto strings = std::map<z_encoding_prefix_t, std::string_view>{
-        {Z_ENCODING_PREFIX_EMPTY, ""},
-        {Z_ENCODING_PREFIX_APP_OCTET_STREAM, "application/octet-stream"},
-        {Z_ENCODING_PREFIX_APP_CUSTOM, "application/"},
-        {Z_ENCODING_PREFIX_TEXT_PLAIN, "text/plain"},
-        {Z_ENCODING_PREFIX_APP_PROPERTIES, "application/properties"},
-        {Z_ENCODING_PREFIX_APP_JSON, "application/json"},
-        {Z_ENCODING_PREFIX_APP_SQL, "application/sql"},
-        {Z_ENCODING_PREFIX_APP_INTEGER, "application/integer"},
-        {Z_ENCODING_PREFIX_APP_FLOAT, "application/float"},
-        {Z_ENCODING_PREFIX_APP_XML, "application/xml"},
-        {Z_ENCODING_PREFIX_APP_XHTML_XML, "application/xhtml+xml"},
-        {Z_ENCODING_PREFIX_APP_X_WWW_FORM_URLENCODED, "application/x-www-form-urlencoded"},
-        {Z_ENCODING_PREFIX_TEXT_JSON, "text/json"},
-        {Z_ENCODING_PREFIX_TEXT_HTML, "text/html"},
-        {Z_ENCODING_PREFIX_TEXT_XML, "text/xml"},
-        {Z_ENCODING_PREFIX_TEXT_CSS, "text/css"},
-        {Z_ENCODING_PREFIX_TEXT_CSV, "text/csv"},
-        {Z_ENCODING_PREFIX_TEXT_JAVASCRIPT, "text/javascript"},
-        {Z_ENCODING_PREFIX_IMAGE_JPEG, "image/jpeg"},
-        {Z_ENCODING_PREFIX_IMAGE_PNG, "image/png"},
-        {Z_ENCODING_PREFIX_IMAGE_GIF, "image/gif"},
-    };
+    const auto it = std::find_if(
+        strings.cbegin(),
+        strings.cend(),
+        [&prefix](decltype(strings)::const_reference elem) { return std::get<0>(elem) == prefix; });
 
-    const auto it = strings.find(prefix);
-    return (it != strings.cend()) ? std::string{it->second.data()} + std::string{suffix}
-                                  : std::string{suffix};
+    return (it != strings.cend()) //
+               ? std::get<1>(*it).data() + std::string{suffix}
+               : std::string{suffix};
 }
 
 auto encoding_from_string(std::string_view encoding) //
     -> std::tuple<z_encoding_prefix_t, std::string_view>
 {
-    const auto encodings = std::map<std::string_view, z_encoding_prefix_t>{
-        {"", Z_ENCODING_PREFIX_EMPTY},
-        {"application/octet-stream", Z_ENCODING_PREFIX_APP_OCTET_STREAM},
-        {"application/", Z_ENCODING_PREFIX_APP_CUSTOM},
-        {"text/plain", Z_ENCODING_PREFIX_TEXT_PLAIN},
-        {"application/properties", Z_ENCODING_PREFIX_APP_PROPERTIES},
-        {"application/json", Z_ENCODING_PREFIX_APP_JSON},
-        {"application/sql", Z_ENCODING_PREFIX_APP_SQL},
-        {"application/integer", Z_ENCODING_PREFIX_APP_INTEGER},
-        {"application/float", Z_ENCODING_PREFIX_APP_FLOAT},
-        {"application/xml", Z_ENCODING_PREFIX_APP_XML},
-        {"application/xhtml+xml", Z_ENCODING_PREFIX_APP_XHTML_XML},
-        {"application/x-www-form-urlencoded", Z_ENCODING_PREFIX_APP_X_WWW_FORM_URLENCODED},
-        {"text/json", Z_ENCODING_PREFIX_TEXT_JSON},
-        {"text/html", Z_ENCODING_PREFIX_TEXT_HTML},
-        {"text/xml", Z_ENCODING_PREFIX_TEXT_XML},
-        {"text/css", Z_ENCODING_PREFIX_TEXT_CSS},
-        {"text/csv", Z_ENCODING_PREFIX_TEXT_CSV},
-        {"text/javascript", Z_ENCODING_PREFIX_TEXT_JAVASCRIPT},
-        {"image/jpeg", Z_ENCODING_PREFIX_IMAGE_JPEG},
-        {"image/png", Z_ENCODING_PREFIX_IMAGE_PNG},
-        {"image/gif", Z_ENCODING_PREFIX_IMAGE_GIF},
-    };
+    const auto it = std::find_if(
+        strings.cbegin(),
+        strings.cend(),
+        [&encoding](decltype(strings)::const_reference elem) {
+            return std::get<1>(elem) == encoding;
+        });
 
-    const auto it = encodings.find(encoding);
-
-    if (it != encodings.cend()) {
-        return {it->second, std::string_view{}};
+    if (it != strings.cend()) {
+        return {std::get<0>(*it), std::string_view{}};
     }
 
-    for (const auto& it : encodings) {
-        if (!it.first.empty() && encoding.starts_with(it.first)) {
-            return {it.second, encoding.substr(it.first.length())};
+    for (const auto& [e, s] : strings) {
+        if (!s.empty() && encoding.starts_with(s)) {
+            return {e, encoding.substr(s.length())};
         }
     }
 
@@ -136,6 +125,8 @@ auto encoding_from_string(std::string_view encoding) //
 
 client_t::client_t()
     : _mem_storages{}
+    , _host{}
+    , _port{}
     , _z_session{}
     , _subscriptions{}
 {}
