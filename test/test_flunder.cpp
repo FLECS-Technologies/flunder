@@ -298,6 +298,57 @@ TEST(flunder, pub_sub)
     done = false;
 }
 
+TEST(flunder, mem_storage)
+{
+    auto client = flunder::client_t{};
+    {
+        /* Not connected -> error */
+        const auto [res, vars] = client.get("**");
+        ASSERT_EQ(res, -1);
+        ASSERT_TRUE(vars.empty());
+    }
+
+    client.connect("172.17.0.1", 7447);
+    client.publish("/flecs/flunder/test/mem_storage/int", 1111);
+    {
+        /* Connected -> success, but no variables */
+        const auto [res, vars] = client.get("**");
+        ASSERT_EQ(res, 0);
+        ASSERT_TRUE(vars.empty());
+    }
+
+    auto res = client.add_mem_storage("test-storage", "/flecs/flunder/test/mem_storage/**");
+    ASSERT_EQ(res, 0);
+    usleep(100000);
+    client.publish("/flecs/flunder/test/mem_storage/int", 1111);
+    client.publish("/flecs/flunder/test/mem_storage/float", 3.14);
+    usleep(100000);
+    {
+        /* Connected and mem_storage -> success and variables */
+        const auto [res, vars] = client.get("/flecs/flunder/test/mem_storage/**");
+        ASSERT_EQ(res, 0);
+        ASSERT_EQ(vars.size(), 2);
+    }
+
+    res = client.erase("/flecs/flunder/test/mem_storage/float");
+    ASSERT_EQ(res, 0);
+    usleep(100000);
+    {
+        const auto [res, vars] = client.get("/flecs/flunder/test/mem_storage/**");
+        ASSERT_EQ(res, 0);
+        ASSERT_EQ(vars.size(), 1);
+    }
+
+    res = client.remove_mem_storage("test-storage");
+    ASSERT_EQ(res, 0);
+    usleep(100000);
+    {
+        const auto [res, vars] = client.get("/flecs/flunder/test/mem_storage/**");
+        ASSERT_EQ(res, 0);
+        ASSERT_TRUE(vars.empty());
+    }
+}
+
 template <typename T>
 void flunder_cbk_c_userp(void* client, const flunder::variable_t* var, void* userp)
 {
