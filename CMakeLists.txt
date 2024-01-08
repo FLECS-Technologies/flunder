@@ -63,23 +63,14 @@ target_include_directories(flunder PRIVATE
 )
 
 target_link_libraries(flunder PRIVATE
-    cpr::cpr
     zenohc::lib
 )
 
 target_link_libraries(flunder.static INTERFACE
-    cpr::cpr
     zenohc::lib
 )
 target_include_directories(flunder.static INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-target_link_libraries(flunder.shared
-    PRIVATE
-    -Wl,--whole-archive
-    cpr::cpr
-    -Wl,--no-whole-archive
 )
 
 target_link_libraries(flunder.shared INTERFACE

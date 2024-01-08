@@ -14,10 +14,9 @@
 
 #include "flunder/impl/client.h"
 
-#include <cpr/cpr.h>
-
 #include <algorithm>
 #include <array>
+#include <cstdio>
 #include <nlohmann/json.hpp>
 #include <thread>
 #include <tuple>
@@ -185,7 +184,7 @@ auto client_t::disconnect() //
         unsubscribe(_subscriptions.rbegin()->first);
     }
     while (!_mem_storages.empty()) {
-        remove_mem_storage(*_mem_storages.rbegin());
+        remove_mem_storage(_mem_storages.rbegin()->name);
     }
     if (is_connected()) {
         z_close(z_move(_z_session));
@@ -370,34 +369,49 @@ auto client_t::unsubscribe(std::string_view topic) //
     return 0;
 }
 
+static auto router_zid(const z_id_t* zid, void* ctx) //
+    -> void
+{
+    auto& res = *reinterpret_cast<std::string*>(ctx);
+    for (int i = 0; i < 16; ++i) {
+        sprintf(&res.data()[2 * i], "%02x", zid->id[15 - i]);
+    }
+}
+
 auto client_t::add_mem_storage(
     std::string name,
     std::string_view topic) //
     -> int
 {
-    if (_mem_storages.count(name)) {
+    if (_mem_storages.contains(mem_storage_t{name, {}})) {
         return -1;
+    }
+
+    auto zid = std::string(32, '0');
+    {
+        auto cbk = z_owned_closure_zid_t{
+            .context = &zid,
+            .call = router_zid,
+            .drop = nullptr,
+        };
+        const auto res = z_info_routers_zid(z_loan(_z_session), z_move(cbk));
+        if (res != 0) {
+            return -1;
+        }
     }
 
     const auto keyexpr = topic.starts_with('/') ? topic.data() + 1 : topic.data();
 
-    auto url = cpr::Url{std::string{"http://"}
-                            .append(_host)
-                            .append(":8000")
-                            .append("/@/router/local/config/plugins/storage_manager/storages/")
-                            .append(name)};
+    const auto req = nlohmann::json({{"key_expr", keyexpr}, {"volume", "memory"}}).dump();
+    const auto admin_keyexpr =
+        ("@/router/" + zid + "/config/plugins/storage_manager/storages/").append(name);
 
-    const auto req_json = nlohmann::json{{"key_expr", keyexpr}, {"volume", "memory"}};
-    const auto res = cpr::Put(
-        url,
-        cpr::Header{{"content-type", "application/json"}},
-        cpr::Body{req_json.dump()});
-
-    if (res.status_code != 200) {
+    const auto res = publish_custom(admin_keyexpr, req.data(), req.size(), "application/json");
+    if (res != 0) {
         return -1;
     }
 
-    _mem_storages.insert(std::move(name));
+    _mem_storages.insert(mem_storage_t{std::move(name), std::move(zid)});
 
     return 0;
 }
@@ -405,22 +419,21 @@ auto client_t::add_mem_storage(
 auto client_t::remove_mem_storage(std::string name) //
     -> int
 {
-    if (!_mem_storages.count(name)) {
+    const auto it = _mem_storages.find(mem_storage_t{name, {}});
+    if (it == _mem_storages.end()) {
         return -1;
     }
 
-    auto url = cpr::Url{std::string{"http://"}
-                            .append(_host)
-                            .append(":8000")
-                            .append("/@/router/local/config/plugins/storage_manager/storages/")
-                            .append(name)};
-    const auto res = cpr::Delete(url);
+    const auto admin_keyexpr =
+        ("@/router/" + it->zid + "/config/plugins/storage_manager/storages/").append(name);
+    const auto opts = z_delete_options_default();
+    const auto res = z_delete(z_loan(_z_session), z_keyexpr(admin_keyexpr.c_str()), &opts);
 
-    if (res.status_code != 200) {
+    if (res != 0) {
         return -1;
     }
 
-    _mem_storages.erase(name);
+    _mem_storages.erase(mem_storage_t{std::move(name), {}});
 
     return 0;
 }

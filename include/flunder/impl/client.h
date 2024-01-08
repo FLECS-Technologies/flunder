@@ -27,6 +27,17 @@
 namespace flunder {
 namespace impl {
 
+struct mem_storage_t
+{
+    std::string name;
+    std::string zid;
+};
+
+inline auto operator<=>(const mem_storage_t& lhs, const mem_storage_t& rhs)
+{
+    return lhs.name <=> rhs.name;
+}
+
 class client_t
 {
 public:
@@ -135,7 +146,7 @@ private:
         const void* userp) //
         -> int;
 
-    std::set<std::string> _mem_storages;
+    std::set<mem_storage_t> _mem_storages;
 
     std::string _host;
     std::uint16_t _port;
