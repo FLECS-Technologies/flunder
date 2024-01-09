@@ -1,0 +1,41 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      deploy-type:
+        required: true
+        type: string
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v3
+        with:
+          path: build/
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy packages and latest files
+        uses: azure/CLI@v1
+        with:
+          azcliversion: 2.53.0
+          inlineScript: |
+            for i in `find build/ -mindepth 1 -maxdepth 1 -name "*.deb"`; do \
+              echo "Uploading ${i}"; \
+              az storage blob upload --account-name flecs --container-name flecs-dl --name ${{ inputs.deploy-type }}/libflunder/deb/$(basename ${i}) --file ${i} --overwrite
+            done
+            for i in `find build/ -mindepth 1 -maxdepth 1 -name "*.tar.gz"`; do \
+              echo "Uploading ${i}"; \
+              az storage blob upload --account-name flecs --container-name flecs-dl --name ${{ inputs.deploy-type }}/libflunder/tgz/$(basename ${i}) --file ${i} --overwrite
+            done
+            for i in `find build/ -mindepth 1 -maxdepth 1 -name "latest_*"`; do \
+              echo "Uploading ${i}"; \
+              az storage blob upload --account-name flecs --container-name flecs-dl --name ${{ inputs.deploy-type }}/libflunder/$(basename ${i}) --file ${i} --overwrite
+            done

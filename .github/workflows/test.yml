@@ -1,0 +1,26 @@
+name: Test
+
+on:
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    container: flecspublic.azurecr.io/flecs-build
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: "CMake: Configure"
+        run: |
+          cmake -G Ninja -B build/test -DCMAKE_BUILD_TYPE=RelWithDebInfo -DFLECS_BUILD_TESTS=On -DCMAKE_INSTALL_PREFIX=out/test
+      - name: "CMake: Build"
+        run: |
+          cmake --build build/test
+      - name: "CMake: Test"
+        run: |
+          cmake --build build/test --target test
+      - name: "CMake: Coverage"
+        run: |
+          cmake --build build/test --target coverage

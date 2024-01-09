@@ -1,0 +1,20 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      build-type: Release
+  test:
+    uses: ./.github/workflows/test.yml
+  deploy:
+    needs: [build, test]
+    uses: ./.github/workflows/deploy.yml
+    with:
+      deploy-type: public
+    secrets: inherit
