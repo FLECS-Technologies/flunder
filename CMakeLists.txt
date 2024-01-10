@@ -16,7 +16,7 @@ cmake_minimum_required(VERSION 3.21)
 
 include(${CMAKE_SOURCE_DIR}/flecs-build/cmake/flecs-build.cmake)
 
-project(flunder)
+project(flunder VERSION 3.0.0)
 
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
     add_subdirectory(flecs-external)
@@ -54,6 +54,7 @@ set_property(TARGET flunder PROPERTY POSITION_INDEPENDENT_CODE 1)
 
 add_library(flunder.shared SHARED $<TARGET_OBJECTS:flunder>)
 set_target_properties(flunder.shared PROPERTIES OUTPUT_NAME flunder)
+set_target_properties(flunder.shared PROPERTIES SOVERSION 3)
 
 add_library(flunder.static STATIC $<TARGET_OBJECTS:flunder>)
 set_target_properties(flunder.static PROPERTIES OUTPUT_NAME flunder_static)
@@ -87,5 +88,7 @@ add_custom_target(
     coverage
     DEPENDS test
     COMMAND mkdir -p coverage
-    COMMAND gcovr -r ${CMAKE_SOURCE_DIR} -e ${CMAKE_SOURCE_DIR}/external/ -e ${CMAKE_BINARY_DIR} --html-details coverage/coverage.html
+    COMMAND gcovr -r ${CMAKE_SOURCE_DIR} -e ${CMAKE_SOURCE_DIR}/examples/ -e ${CMAKE_SOURCE_DIR}/external/ -e ${CMAKE_BINARY_DIR} --html-details coverage/coverage.html
 )
+
+add_subdirectory(pkg)
