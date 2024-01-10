@@ -92,3 +92,7 @@ add_custom_target(
 )
 
 add_subdirectory(pkg)
+
+add_custom_command(TARGET flunder.shared POST_BUILD
+    COMMAND echo -n ${PROJECT_VERSION} >latest_flunder
+)
