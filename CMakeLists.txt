@@ -49,6 +49,7 @@ set(HEADER_LIB
 )
 
 add_library(flunder OBJECT ${SRC_LIB} ${HEADER_LIB})
+target_compile_options(flunder PUBLIC -Wno-error=restrict)
 
 set_property(TARGET flunder PROPERTY POSITION_INDEPENDENT_CODE 1)
 
