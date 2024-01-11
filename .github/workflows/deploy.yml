@@ -22,7 +22,7 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Deploy packages and latest files
+      - name: Deploy packages and latest file
         uses: azure/CLI@v1
         with:
           azcliversion: 2.53.0
@@ -35,7 +35,7 @@ jobs:
               echo "Uploading ${i}"; \
               az storage blob upload --account-name flecs --container-name flecs-dl --name ${{ inputs.deploy-type }}/libflunder/tgz/$(basename ${i}) --file ${i} --overwrite
             done
-            for i in `find build/ -name "latest_*"`; do \
+            for i in `find build/ -name "latest"`; do \
               echo "Uploading ${i}"; \
               az storage blob upload --account-name flecs --container-name flecs-dl --name ${{ inputs.deploy-type }}/libflunder/$(basename ${i}) --file ${i} --overwrite
             done
