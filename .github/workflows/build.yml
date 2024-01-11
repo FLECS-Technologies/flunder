@@ -39,5 +39,5 @@ jobs:
           path: |
             build/${{ matrix.arch }}/*.deb
             build/${{ matrix.arch }}/*.tar.gz
-            build/${{ matrix.arch }}/latest_*
+            build/${{ matrix.arch }}/latest
           retention-days: 1
