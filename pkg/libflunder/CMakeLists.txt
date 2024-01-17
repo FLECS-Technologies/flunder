@@ -18,6 +18,7 @@ install(
     TARGETS flunder.shared LIBRARY
     NAMELINK_SKIP
     COMPONENT runtime
+    EXCLUDE_FROM_ALL
 )
 get_target_property(zenohc-lib zenohc::lib IMPORTED_LOCATION)
 install(
@@ -27,8 +28,10 @@ install(
     PERMISSIONS GROUP_READ GROUP_EXECUTE
     PERMISSIONS WORLD_READ WORLD_EXECUTE
     COMPONENT runtime
+    EXCLUDE_FROM_ALL
 )
 install(FILES copyright
     DESTINATION share/doc/libflunder
     COMPONENT runtime
+    EXCLUDE_FROM_ALL
 )

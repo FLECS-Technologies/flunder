@@ -19,18 +19,22 @@ install(
     DESTINATION ${CMAKE_INSTALL_LIBDIR}
     NAMELINK_ONLY
     COMPONENT dev
+    EXCLUDE_FROM_ALL
 )
 install(
     TARGETS flunder.static ARCHIVE
     DESTINATION ${CMAKE_INSTALL_LIBDIR}
     COMPONENT dev
+    EXCLUDE_FROM_ALL
 )
 install(
     DIRECTORY ${CMAKE_SOURCE_DIR}/include/flunder
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     COMPONENT dev
+    EXCLUDE_FROM_ALL
 )
 install(FILES copyright
     DESTINATION share/doc/libflunder-dev
     COMPONENT dev
+    EXCLUDE_FROM_ALL
 )
