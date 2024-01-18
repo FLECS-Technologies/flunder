@@ -29,7 +29,7 @@ if(FLECS_BUILD_TESTS)
         flunder.shared
     )
 
-    add_test(NAME flunder.test.init COMMAND bash -c "docker rm -f flecs-flunder-test && docker run -d --name flecs-flunder-test -p 7447:7447 -p 8000:8000 --env RUST_LOG=debug cr.flecs.tech/tech.flecs.service-mesh:2.4.0-dormouse-dev --adminspace-permissions=rw")
+    add_test(NAME flunder.test.init COMMAND bash -c "docker rm -f flecs-flunder-test && docker run -d --name flecs-flunder-test -p 7447:7447 --env RUST_LOG=debug flecspublic.azurecr.io/tech.flecs.flunder:3.0.0 --adminspace-permissions=rw")
     add_test(NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME})
     set_tests_properties(${PROJECT_NAME} PROPERTIES DEPENDS flunder.test.init)
 endif()
