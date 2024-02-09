@@ -146,6 +146,9 @@ private:
         const void* userp) //
         -> int;
 
+    FLECS_EXPORT auto determine_connected_router_count() const //
+        -> int;
+
     std::set<mem_storage_t> _mem_storages;
 
     std::string _host;
