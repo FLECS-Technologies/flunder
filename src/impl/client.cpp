@@ -164,7 +164,7 @@ auto client_t::is_connected() const noexcept //
         reinterpret_cast<const char*>(&_z_session) + sizeof(decltype(_z_session)),
         reinterpret_cast<const char*>(&invalid_session));
 
-    return session_initialized && z_session_check(&_z_session);
+    return session_initialized && z_session_check(&_z_session) && determine_connected_router_count() > 0;
 }
 
 auto client_t::reconnect() //
