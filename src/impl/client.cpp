@@ -353,6 +353,20 @@ auto client_t::subscribe(
     return 0;
 }
 
+auto client_t::determine_connected_router_count() const //
+        -> int
+{
+    int routers = 0;
+    auto lambda = [](const struct z_id_t*, void* counter) {
+        *static_cast<int*>(counter) += 1;
+    };
+    auto callback = z_owned_closure_zid_t{&routers, lambda, nullptr};
+    if (z_info_routers_zid(z_session_loan(&_z_session), z_move(callback)) != 0) {
+        return 0;
+    }
+    return routers;
+}
+
 auto client_t::unsubscribe(std::string_view topic) //
     -> int
 {
