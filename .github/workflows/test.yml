@@ -20,7 +20,7 @@ jobs:
           cmake --build build/test
       - name: "CMake: Test"
         run: |
-          cmake --build build/test --target test
+          ctest --test-dir build/test --verbose
       - name: "CMake: Coverage"
         run: |
           cmake --build build/test --target coverage

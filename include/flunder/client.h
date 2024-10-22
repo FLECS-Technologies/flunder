@@ -19,8 +19,12 @@
 #endif // FLECS_EXPORT
 
 #ifndef __cplusplus
+#ifndef FLECS_FLUNDER_HOST
 #define FLECS_FLUNDER_HOST "flecs-flunder"
+#endif // FLECS_FLUNDER_HOST
+#ifndef FLECS_FLUNDER_PORT
 #define FLECS_FLUNDER_PORT 7447
+#endif // FLECS_FLUNDER_PORT
 #endif // __cplusplus
 
 #include "flunder/variable.h"
