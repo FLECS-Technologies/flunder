@@ -33,7 +33,7 @@ struct custom_t
 template <typename T>
 auto topic(T);
 
-#define TOPIC_BASE "/flecs/flunder/test/"
+#define TOPIC_BASE "flecs/flunder/test/"
 #define DEF_TOPIC(type)          \
     template <>                  \
     auto topic<type>(type)       \
@@ -65,61 +65,51 @@ DEF_TOPIC_EX(void*, raw)
 DEF_TOPIC_EX(custom_t, custom)
 DEF_TOPIC_EX(const char*, string)
 
+namespace {
+
 template <typename T>
 constexpr auto encoding(T);
 
-template <typename T>
-constexpr auto is_signed(T)
-{
-    if constexpr (std::is_signed_v<T>) {
-        return "s";
+#define DEF_TEXT_ENCODING(type, schema)                                                   \
+    template <>                                                                           \
+    constexpr auto encoding<type>(type)                                                   \
+    {                                                                                     \
+        return std::string_view(schema).empty() ? std::string_view{"text/plain"}          \
+                                                : std::string_view{"text/plain;" schema}; \
     }
-    return "u";
+
+DEF_TEXT_ENCODING(bool, "bool")
+DEF_TEXT_ENCODING(std::int8_t, "int8")
+DEF_TEXT_ENCODING(std::int16_t, "int16")
+DEF_TEXT_ENCODING(std::int32_t, "int32")
+DEF_TEXT_ENCODING(std::int64_t, "int64")
+DEF_TEXT_ENCODING(std::uint8_t, "uint8")
+DEF_TEXT_ENCODING(std::uint16_t, "uint16")
+DEF_TEXT_ENCODING(std::uint32_t, "uint32")
+DEF_TEXT_ENCODING(std::uint64_t, "uint64")
+
+DEF_TEXT_ENCODING(float, "float32");
+DEF_TEXT_ENCODING(double, "float64");
+
+DEF_TEXT_ENCODING(std::string, "");
+DEF_TEXT_ENCODING(std::string_view, "")
+DEF_TEXT_ENCODING(const char*, "")
+
+template <>
+constexpr auto encoding<custom_t>(custom_t)
+{
+    using std::operator""sv;
+    return "application/octet-stream;custom_t"sv;
 }
 
-#define DEF_APP_ENCODING(type)          \
-    template <>                         \
-    constexpr auto encoding<type>(type) \
-    {                                   \
-        return "application/" #type;    \
-    }
-#define DEF_INT_ENCODING(type)                                   \
-    template <>                                                  \
-    auto encoding<type>(type)                                    \
-    {                                                            \
-        using std::operator""s;                                  \
-        return "application/integer+"s.append(is_signed(type{})) \
-            .append(flunder::to_string(8 * sizeof(type)));       \
-    }
-#define DEF_FLOAT_ENCODING(type)                                                   \
-    template <>                                                                    \
-    auto encoding<type>(type)                                                      \
-    {                                                                              \
-        using std::operator""s;                                                    \
-        return "application/float+"s.append(flunder::to_string(8 * sizeof(type))); \
-    }
-#define DEF_CUSTOM_ENCODING(type, enc) \
-    template <>                        \
-    auto encoding<type>(type)          \
-    {                                  \
-        return enc;                    \
-    }
-DEF_APP_ENCODING(bool)
-DEF_INT_ENCODING(std::int8_t)
-DEF_INT_ENCODING(std::int16_t)
-DEF_INT_ENCODING(std::int32_t)
-DEF_INT_ENCODING(std::int64_t)
-DEF_INT_ENCODING(std::uint8_t)
-DEF_INT_ENCODING(std::uint16_t)
-DEF_INT_ENCODING(std::uint32_t)
-DEF_INT_ENCODING(std::uint64_t)
-DEF_FLOAT_ENCODING(float);
-DEF_FLOAT_ENCODING(double);
-DEF_CUSTOM_ENCODING(std::string, "text/plain")
-DEF_CUSTOM_ENCODING(std::string_view, "text/plain")
-DEF_CUSTOM_ENCODING(const char*, "text/plain")
-DEF_CUSTOM_ENCODING(void*, "application/octet-stream")
-DEF_CUSTOM_ENCODING(custom_t, "my-type")
+template <>
+constexpr auto encoding<void*>(void*)
+{
+    using std::operator""sv;
+    return "application/octet-stream"sv;
+}
+
+} // namespace
 
 template <typename T>
 auto val(T) -> std::enable_if_t<std::is_integral_v<T> && !std::is_same_v<T, bool>, T>
@@ -168,10 +158,10 @@ void flunder_cbk(flunder::client_t* /*client*/, const flunder::variable_t* var)
     if (var->topic() == topic((void*)(nullptr))) {
         ASSERT_EQ(var->encoding(), encoding((void*)(nullptr)));
     } else if (var->topic() == topic(custom_t{})) {
-        ASSERT_EQ(var->encoding(), encoding(custom_t{}));
         auto lock_guard = std::lock_guard<std::mutex>{m};
         done = true;
         cv.notify_all();
+        ASSERT_EQ(var->encoding(), encoding(custom_t{}));
     }
 }
 
@@ -180,7 +170,7 @@ TEST(flunder, init)
     auto client_1 = flunder::client_t{};
     ASSERT_FALSE(client_1.is_connected());
 
-    auto res = client_1.connect("172.17.0.1", 7447);
+    auto res = client_1.connect("172.18.0.1", 7447);
     ASSERT_EQ(res, 0);
     ASSERT_TRUE(client_1.is_connected());
 
@@ -208,8 +198,8 @@ TEST(flunder, pub_sub)
     auto client_1 = flunder::client_t{};
     auto client_2 = flunder::client_t{};
 
-    client_1.connect("172.17.0.1", 7447);
-    client_2.connect("172.17.0.1", 7447);
+    client_1.connect("172.18.0.1", 7447);
+    client_2.connect("172.18.0.1", 7447);
 
     auto res = client_1.subscribe(
         topic(nullptr),
@@ -265,31 +255,22 @@ TEST(flunder, pub_sub)
     res = client_1.unsubscribe(topic(nullptr));
     ASSERT_EQ(res, 0);
 
-    using std::operator""sv;
     res = client_2.publish(topic(nullptr), "Hello, FLECS!");
     ASSERT_EQ(res, 0);
-    usleep(250);
     res = client_2.publish(topic(std::string{}), val(std::string{}));
     ASSERT_EQ(res, 0);
-    usleep(250);
     res = client_2.publish(topic(std::string_view{}), val(std::string_view{}));
     ASSERT_EQ(res, 0);
-    usleep(250);
     res = client_2.publish(topic(int32_t{}), val(std::int32_t{}));
     ASSERT_EQ(res, 0);
-    usleep(250);
     res = client_2.publish(topic(bool{}), true);
     ASSERT_EQ(res, 0);
-    usleep(250);
     res = client_2.publish(topic(float{}), val(float{}));
     ASSERT_EQ(res, 0);
-    usleep(250);
     res = client_2.publish(topic(double{}), val(double{}));
     ASSERT_EQ(res, 0);
-    usleep(250);
     res = client_2.publish(topic((void*)(nullptr)), reinterpret_cast<void*>(0x0), 0);
     ASSERT_EQ(res, 0);
-    usleep(250);
     res = client_2.publish(topic(custom_t{}), "Hello, FLECS!", 13, encoding(custom_t{}));
     ASSERT_EQ(res, 0);
 
@@ -308,8 +289,8 @@ TEST(flunder, mem_storage)
         ASSERT_TRUE(vars.empty());
     }
 
-    client.connect("172.17.0.1", 7447);
-    client.publish("/flecs/flunder/test/mem_storage/int", 1111);
+    client.connect("172.18.0.1", 7447);
+    client.publish("flecs/flunder/test/mem_storage/int", 1111);
     {
         /* Connected -> success, but no variables */
         const auto [res, vars] = client.get("**");
@@ -317,24 +298,24 @@ TEST(flunder, mem_storage)
         ASSERT_TRUE(vars.empty());
     }
 
-    auto res = client.add_mem_storage("test-storage", "/flecs/flunder/test/mem_storage/**");
+    auto res = client.add_mem_storage("test-storage", "flecs/flunder/test/mem_storage/**");
     ASSERT_EQ(res, 0);
     usleep(100000);
-    client.publish("/flecs/flunder/test/mem_storage/int", 1111);
-    client.publish("/flecs/flunder/test/mem_storage/float", 3.14);
+    client.publish("flecs/flunder/test/mem_storage/int", 1111);
+    client.publish("flecs/flunder/test/mem_storage/float", 3.14);
     usleep(100000);
     {
         /* Connected and mem_storage -> success and variables */
-        const auto [res, vars] = client.get("/flecs/flunder/test/mem_storage/**");
+        const auto [res, vars] = client.get("flecs/flunder/test/mem_storage/**");
         ASSERT_EQ(res, 0);
         ASSERT_EQ(vars.size(), 2);
     }
 
-    res = client.erase("/flecs/flunder/test/mem_storage/float");
+    res = client.erase("flecs/flunder/test/mem_storage/float");
     ASSERT_EQ(res, 0);
     usleep(100000);
     {
-        const auto [res, vars] = client.get("/flecs/flunder/test/mem_storage/**");
+        const auto [res, vars] = client.get("flecs/flunder/test/mem_storage/**");
         ASSERT_EQ(res, 0);
         ASSERT_EQ(vars.size(), 1);
     }
@@ -343,7 +324,7 @@ TEST(flunder, mem_storage)
     ASSERT_EQ(res, 0);
     usleep(100000);
     {
-        const auto [res, vars] = client.get("/flecs/flunder/test/mem_storage/**");
+        const auto [res, vars] = client.get("flecs/flunder/test/mem_storage/**");
         ASSERT_EQ(res, 0);
         ASSERT_TRUE(vars.empty());
     }
@@ -366,10 +347,10 @@ void flunder_cbk_c(void* /*client*/, const flunder::variable_t* var)
     if (var->topic() == topic((void*)(nullptr))) {
         ASSERT_EQ(var->encoding(), encoding((void*)(nullptr)));
     } else if (var->topic() == topic(custom_t{})) {
-        ASSERT_EQ(var->encoding(), encoding(custom_t{}));
         auto lock_guard = std::lock_guard<std::mutex>{m};
         done = true;
         cv.notify_all();
+        ASSERT_EQ(var->encoding(), encoding(custom_t{}));
     }
 }
 
@@ -380,7 +361,7 @@ TEST(flunder, c)
     auto client = flunder_client_new();
     ASSERT_NE(client, nullptr);
 
-    auto res = flunder_connect(client, "172.17.0.1", 7447);
+    auto res = flunder_connect(client, "172.18.0.1", 7447);
     ASSERT_EQ(res, 0);
 
     res = flunder_subscribe_userp(client, topic(bool{}), flunder_cbk_c_userp<bool>, client);
@@ -492,7 +473,8 @@ TEST(flunder, c)
     res = flunder_publish_raw(client, topic((void*)(nullptr)), nullptr, 0);
     ASSERT_EQ(res, 0);
     usleep(250);
-    res = flunder_publish_custom(client, topic(custom_t{}), nullptr, 0, encoding(custom_t{}));
+    res =
+        flunder_publish_custom(client, topic(custom_t{}), nullptr, 0, encoding(custom_t{}).data());
     ASSERT_EQ(res, 0);
 
     auto lock = std::unique_lock{m};

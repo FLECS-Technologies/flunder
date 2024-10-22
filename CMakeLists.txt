@@ -19,6 +19,7 @@ include(${CMAKE_SOURCE_DIR}/flecs-build/cmake/flecs-build.cmake)
 project(flunder VERSION 3.0.0)
 
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
+    set(FLECS_NEED_ZENOHC TRUE)
     add_subdirectory(flecs-external)
 endif()
 
@@ -39,6 +40,7 @@ set(SRC_LIB
     src/to_string.cpp
     src/variable.cpp
     src/impl/client.cpp
+    src/impl/to_bytes.cpp
 )
 
 set(HEADER_LIB
@@ -46,6 +48,7 @@ set(HEADER_LIB
     include/flunder/to_string.h
     include/flunder/variable.h
     include/flunder/impl/client.h
+    include/flunder/impl/to_bytes.h
 )
 
 add_library(flunder OBJECT ${SRC_LIB} ${HEADER_LIB})
