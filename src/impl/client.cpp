@@ -33,7 +33,7 @@ struct overload : Ts...
     using Ts::operator()...;
 };
 
-static auto lib_subscribe_callback(const z_sample_t* sample, void* arg) //
+static auto lib_subscribe_callback(z_loaned_sample_t* sample, void* arg) //
     -> void
 {
     const auto* ctx = static_cast<const client_t::subscribe_ctx_t*>(arg);
@@ -41,17 +41,25 @@ static auto lib_subscribe_callback(const z_sample_t* sample, void* arg) //
         return;
     }
 
-    auto keyexpr = z_keyexpr_to_string(sample->keyexpr);
+    auto keyexpr = z_view_string_t{};
+    z_keyexpr_as_view_string(z_sample_keyexpr(sample), &keyexpr);
+
+    auto payload_reader = z_bytes_get_reader(z_sample_payload(sample));
+    const auto payload_len = z_bytes_reader_remaining(&payload_reader);
+    auto payload = std::string(payload_len, '\0');
+    z_bytes_reader_read(&payload_reader, reinterpret_cast<uint8_t*>(payload.data()), payload_len);
+
+    auto encoding = z_owned_string_t{};
+    z_encoding_to_string(z_sample_encoding(sample), &encoding);
+    auto timestamp = z_sample_timestamp(sample);
+
     const auto var = variable_t{
-        std::string{"/"} + std::string{keyexpr._cstr},
-        std::string{reinterpret_cast<const char*>(sample->payload.start), sample->payload.len},
-        to_string(
-            sample->encoding.prefix,
-            std::string_view{
-                reinterpret_cast<const char*>(sample->encoding.suffix.start),
-                sample->encoding.suffix.len}),
-        flunder::to_string(ntp64_to_unix_time(sample->timestamp.time))};
-    z_str_drop(z_move(keyexpr));
+        std::string{z_string_data(z_loan(keyexpr)), z_string_len(z_loan(keyexpr))},
+        std::move(payload),
+        std::string{z_string_data(z_loan(encoding)), z_string_len(z_loan(encoding))},
+        flunder::to_string(ntp64_to_unix_time(z_timestamp_ntp64_time(timestamp)))};
+
+    z_drop(z_move(encoding));
 
     std::visit(
         overload{
@@ -60,66 +68,6 @@ static auto lib_subscribe_callback(const z_sample_t* sample, void* arg) //
             // call callback with userdata
             [&](client_t::subscribe_cbk_userp_t cbk) { cbk(ctx->_client, &var, ctx->_userp); }},
         ctx->_cbk);
-}
-
-static constexpr auto strings = std::array<std::tuple<z_encoding_prefix_t, std::string_view>, 21>{{
-    {Z_ENCODING_PREFIX_EMPTY, ""},
-    {Z_ENCODING_PREFIX_APP_OCTET_STREAM, "application/octet-stream"},
-    {Z_ENCODING_PREFIX_APP_CUSTOM, "application/"},
-    {Z_ENCODING_PREFIX_TEXT_PLAIN, "text/plain"},
-    {Z_ENCODING_PREFIX_APP_PROPERTIES, "application/properties"},
-    {Z_ENCODING_PREFIX_APP_JSON, "application/json"},
-    {Z_ENCODING_PREFIX_APP_SQL, "application/sql"},
-    {Z_ENCODING_PREFIX_APP_INTEGER, "application/integer"},
-    {Z_ENCODING_PREFIX_APP_FLOAT, "application/float"},
-    {Z_ENCODING_PREFIX_APP_XML, "application/xml"},
-    {Z_ENCODING_PREFIX_APP_XHTML_XML, "application/xhtml+xml"},
-    {Z_ENCODING_PREFIX_APP_X_WWW_FORM_URLENCODED, "application/x-www-form-urlencoded"},
-    {Z_ENCODING_PREFIX_TEXT_JSON, "text/json"},
-    {Z_ENCODING_PREFIX_TEXT_HTML, "text/html"},
-    {Z_ENCODING_PREFIX_TEXT_XML, "text/xml"},
-    {Z_ENCODING_PREFIX_TEXT_CSS, "text/css"},
-    {Z_ENCODING_PREFIX_TEXT_CSV, "text/csv"},
-    {Z_ENCODING_PREFIX_TEXT_JAVASCRIPT, "text/javascript"},
-    {Z_ENCODING_PREFIX_IMAGE_JPEG, "image/jpeg"},
-    {Z_ENCODING_PREFIX_IMAGE_PNG, "image/png"},
-    {Z_ENCODING_PREFIX_IMAGE_GIF, "image/gif"},
-}};
-
-auto to_string(z_encoding_prefix_t prefix, std::string_view suffix) //
-    -> std::string
-{
-    const auto it = std::find_if(
-        strings.cbegin(),
-        strings.cend(),
-        [&prefix](decltype(strings)::const_reference elem) { return std::get<0>(elem) == prefix; });
-
-    return (it != strings.cend()) //
-               ? std::get<1>(*it).data() + std::string{suffix}
-               : std::string{suffix};
-}
-
-auto encoding_from_string(std::string_view encoding) //
-    -> std::tuple<z_encoding_prefix_t, std::string_view>
-{
-    const auto it = std::find_if(
-        strings.cbegin(),
-        strings.cend(),
-        [&encoding](decltype(strings)::const_reference elem) {
-            return std::get<1>(elem) == encoding;
-        });
-
-    if (it != strings.cend()) {
-        return {std::get<0>(*it), std::string_view{}};
-    }
-
-    for (const auto& [e, s] : strings) {
-        if (!s.empty() && encoding.starts_with(s)) {
-            return {e, encoding.substr(s.length())};
-        }
-    }
-
-    return {Z_ENCODING_PREFIX_EMPTY, encoding};
 }
 
 client_t::client_t()
@@ -136,35 +84,42 @@ client_t::~client_t()
 auto client_t::connect(std::string_view host, int port) //
     -> int
 {
+    disconnect();
+
     _host = host;
     _port = port;
 
     const auto len = std::snprintf(nullptr, 0, "[\"tcp/%s:%d\"]", host.data(), port);
-    auto remote = std::string(len, '0');
+    auto remote = std::string(len, '\0');
     std::snprintf(remote.data(), remote.length() + 1, "[\"tcp/%s:%d\"]", host.data(), port);
 
-    auto config = z_config_default();
-    zc_config_insert_json(z_config_loan(&config), Z_CONFIG_CONNECT_KEY, remote.c_str());
-    zc_config_insert_json(z_config_loan(&config), Z_CONFIG_MODE_KEY, R"#("client")#");
-    zc_config_insert_json(z_config_loan(&config), Z_CONFIG_MULTICAST_SCOUTING_KEY, "false");
-    zc_config_insert_json(z_config_loan(&config), "timestamping/enabled", "true");
+    auto config = z_owned_config_t{};
+    {
+        auto res = z_config_default(&config);
+        res |= zc_config_insert_json5(z_loan_mut(config), Z_CONFIG_CONNECT_KEY, remote.c_str());
+        res |= zc_config_insert_json5(z_loan_mut(config), Z_CONFIG_MODE_KEY, R"#("client")#");
+        res |= zc_config_insert_json5(z_loan_mut(config), Z_CONFIG_MULTICAST_SCOUTING_KEY, "false");
+        res |= zc_config_insert_json5(z_loan_mut(config), "timestamping/enabled", "true");
+        if (res) {
+            return -1;
+        }
+    }
 
-    _z_session = z_open(z_move(config));
+    const auto res = z_open(&_z_session, z_move(config), nullptr);
+    if (res < 0) {
+        std::fprintf(stderr, "[flunder] Could not connect to %s:%d: %d\n", host.data(), port, res);
+        z_drop(z_move(_z_session));
+        _z_session = z_owned_session_t{};
+        return -1;
+    }
 
-    return is_connected() ? 0 : -1;
+    return 0;
 }
 
 auto client_t::is_connected() const noexcept //
     -> bool
 {
-    const auto invalid_session = z_owned_session_t{};
-
-    const auto session_initialized = !std::equal(
-        reinterpret_cast<const char*>(&_z_session),
-        reinterpret_cast<const char*>(&_z_session) + sizeof(decltype(_z_session)),
-        reinterpret_cast<const char*>(&invalid_session));
-
-    return session_initialized && z_session_check(&_z_session) && determine_connected_router_count() > 0;
+    return z_internal_check(_z_session);
 }
 
 auto client_t::reconnect() //
@@ -187,7 +142,11 @@ auto client_t::disconnect() //
         remove_mem_storage(_mem_storages.rbegin()->name);
     }
     if (is_connected()) {
-        z_close(z_move(_z_session));
+        auto opt = z_close_options_t{};
+        z_close_options_default(&opt);
+        z_close(z_loan_mut(_z_session), &opt);
+        z_drop(z_move(_z_session));
+        _z_session = z_owned_session_t{};
     }
     _host.clear();
     _port = 0;
@@ -195,45 +154,120 @@ auto client_t::disconnect() //
     return 0;
 }
 
-auto client_t::publish_bool(
+auto client_t::publish(
     std::string_view topic,
-    const std::string& value) const //
+    z_owned_bytes_t value,
+    std::string_view encoding) const //
     -> int
 {
-    return publish(topic, z_encoding(Z_ENCODING_PREFIX_APP_CUSTOM, "bool"), value);
+    auto enc = z_owned_encoding_t{};
+    z_encoding_from_str(&enc, encoding.data());
+    return do_publish(topic, enc, value);
 }
 
-auto client_t::publish_int(
+auto client_t::publish_bool(
     std::string_view topic,
-    size_t size,
-    bool is_signed,
-    const std::string& value) const //
+    z_owned_bytes_t value) const //
     -> int
 {
-    using std::operator""s;
+    return publish(std::move(topic), std::move(value), "text/plain;bool");
+}
 
-    auto suffix = is_signed ? "+s"s : "+u"s;
-    suffix += flunder::to_string(size * 8);
+auto client_t::publish_int8(
+    std::string_view topic,
+    z_owned_bytes_t value) const //
+    -> int
+{
+    return publish(std::move(topic), std::move(value), "text/plain;int8");
+}
+auto client_t::publish_int16(
+    std::string_view topic,
+    z_owned_bytes_t value) const //
+    -> int
+{
+    return publish(std::move(topic), std::move(value), "text/plain;int16");
+}
+auto client_t::publish_int32(
+    std::string_view topic,
+    z_owned_bytes_t value) const //
+    -> int
+{
+    return publish(std::move(topic), std::move(value), "text/plain;int32");
+}
+auto client_t::publish_int64(
+    std::string_view topic,
+    z_owned_bytes_t value) const //
+    -> int
+{
+    return publish(std::move(topic), std::move(value), "text/plain;int64");
+}
+auto client_t::publish_int128(
+    std::string_view topic,
+    z_owned_bytes_t value) const //
+    -> int
+{
+    return publish(std::move(topic), std::move(value), "text/plain;int128");
+}
 
-    return publish(topic, z_encoding(Z_ENCODING_PREFIX_APP_INTEGER, suffix.c_str()), value);
+auto client_t::publish_uint8(
+    std::string_view topic,
+    z_owned_bytes_t value) const //
+    -> int
+{
+    return publish(std::move(topic), std::move(value), "text/plain;uint8");
+}
+auto client_t::publish_uint16(
+    std::string_view topic,
+    z_owned_bytes_t value) const //
+    -> int
+{
+    return publish(std::move(topic), std::move(value), "text/plain;uint16");
+}
+auto client_t::publish_uint32(
+    std::string_view topic,
+    z_owned_bytes_t value) const //
+    -> int
+{
+    return publish(std::move(topic), std::move(value), "text/plain;uint32");
+}
+auto client_t::publish_uint64(
+    std::string_view topic,
+    z_owned_bytes_t value) const //
+    -> int
+{
+    return publish(std::move(topic), std::move(value), "text/plain;uint64");
+}
+auto client_t::publish_uint128(
+    std::string_view topic,
+    z_owned_bytes_t value) const //
+    -> int
+{
+    return publish(std::move(topic), std::move(value), "text/plain;uint128");
 }
 
 auto client_t::publish_float(
     std::string_view topic,
-    size_t size,
-    const std::string& value) const //
+    z_owned_bytes_t value) const //
     -> int
 {
-    const auto size_str = "+" + std::to_string(size * 8);
-    return publish(topic, z_encoding(Z_ENCODING_PREFIX_APP_FLOAT, size_str.c_str()), value);
+    static_assert(sizeof(float) == 4);
+    return publish(std::move(topic), value, "text/plain;float32");
+}
+auto client_t::publish_double(
+    std::string_view topic,
+    z_owned_bytes_t value) const //
+    -> int
+{
+    static_assert(sizeof(double) == 8);
+    return publish(std::move(topic), value, "text/plain;float64");
 }
 
 auto client_t::publish_string(
     std::string_view topic,
-    const std::string& value) const //
+    z_owned_bytes_t value) const //
     -> int
 {
-    return publish(topic, z_encoding(Z_ENCODING_PREFIX_TEXT_PLAIN, nullptr), value);
+    return publish(std::move(topic), value, "text/plain");
 }
 
 auto client_t::publish_raw(
@@ -242,10 +276,7 @@ auto client_t::publish_raw(
     size_t payloadlen) const //
     -> int
 {
-    return publish(
-        topic,
-        z_encoding(Z_ENCODING_PREFIX_APP_OCTET_STREAM, nullptr),
-        std::string{reinterpret_cast<const char*>(payload), payloadlen});
+    return publish_custom(topic, payload, payloadlen, "application/octet-stream");
 }
 
 auto client_t::publish_custom(
@@ -255,31 +286,34 @@ auto client_t::publish_custom(
     std::string_view encoding) const //
     -> int
 {
-    const auto [prefix, suffix] = encoding_from_string(encoding);
-    return publish(
-        topic,
-        z_encoding(prefix, suffix.data()),
-        std::string{reinterpret_cast<const char*>(payload), payloadlen});
+    auto enc = z_owned_encoding_t{};
+    z_encoding_from_str(&enc, encoding.data());
+
+    auto value = z_owned_bytes_t{};
+    z_bytes_copy_from_buf(&value, reinterpret_cast<const uint8_t*>(payload), payloadlen);
+    return do_publish(topic, enc, value);
 }
 
-auto client_t::publish(
+auto client_t::do_publish(
     std::string_view topic,
-    z_encoding_t encoding,
-    const std::string& value) const //
+    z_owned_encoding_t encoding,
+    z_owned_bytes_t value) const //
     -> int
 {
-    auto options = z_put_options_default();
-    options.encoding = encoding;
+    if (!is_connected()) {
+        return -1;
+    }
+
+    auto options = z_put_options_t{};
+    z_put_options_default(&options);
+    options.encoding = z_move(encoding);
     options.congestion_control = z_congestion_control_t::Z_CONGESTION_CONTROL_BLOCK;
+    options.reliability = z_reliability_t::Z_RELIABILITY_RELIABLE;
 
-    const auto keyexpr = topic.starts_with('/') ? topic.data() + 1 : topic.data();
+    auto keyexpr = z_view_keyexpr_t{};
+    z_view_keyexpr_from_str(&keyexpr, topic.starts_with('/') ? topic.data() + 1 : topic.data());
 
-    const auto res = z_put(
-        z_session_loan(&_z_session),
-        z_keyexpr(keyexpr),
-        reinterpret_cast<const uint8_t*>(value.data()),
-        value.size(),
-        &options);
+    const auto res = z_put(z_loan(_z_session), z_loan(keyexpr), z_move(value), &options);
 
     return (res == 0) ? 0 : -1;
 }
@@ -290,7 +324,7 @@ auto client_t::subscribe(
     client_t::subscribe_cbk_t cbk) //
     -> int
 {
-    return subscribe(client, topic, subscribe_cbk_var_t{cbk}, nullptr);
+    return do_subscribe(client, topic, subscribe_cbk_var_t{cbk}, nullptr);
 }
 
 auto client_t::subscribe(
@@ -300,45 +334,52 @@ auto client_t::subscribe(
     const void* userp) //
     -> int
 {
-    return subscribe(client, topic, subscribe_cbk_var_t{cbk}, userp);
+    return do_subscribe(client, topic, subscribe_cbk_var_t{cbk}, userp);
 }
 
-auto client_t::subscribe(
+auto client_t::do_subscribe(
     flunder::client_t* client,
     std::string_view topic,
     subscribe_cbk_var_t cbk,
     const void* userp) //
     -> int
 {
-    const auto keyexpr = topic.starts_with('/') ? topic.data() + 1 : topic.data();
-
-    if (_subscriptions.count(keyexpr) > 0) {
+    if (!is_connected()) {
         return -1;
     }
 
-    auto res = _subscriptions.emplace(keyexpr, subscribe_ctx_t{client, {}, cbk, userp, false});
+    const char* topic_str = topic.starts_with('/') ? topic.data() + 1 : topic.data();
+    if (_subscriptions.contains(topic_str)) {
+        return -1;
+    }
+
+    auto keyexpr = z_view_keyexpr_t{};
+    z_view_keyexpr_from_str(&keyexpr, topic_str);
+
+    auto res = _subscriptions.emplace(topic_str, subscribe_ctx_t{client, {}, cbk, userp, false});
     if (!res.second) {
         return -1;
     }
     auto& ctx = res.first->second;
 
-    auto options = z_subscriber_options_default();
-    options.reliability = Z_RELIABILITY_RELIABLE;
+    auto options = z_subscriber_options_t{};
+    z_subscriber_options_default(&options);
 
-    auto closure =
-        z_owned_closure_sample_t{.context = &ctx, .call = lib_subscribe_callback, .drop = nullptr};
-    ctx._sub = z_declare_subscriber(
-        z_session_loan(&_z_session),
-        z_keyexpr(keyexpr),
+    auto closure = z_owned_closure_sample_t{};
+    z_closure(&closure, lib_subscribe_callback, nullptr, &ctx);
+    const auto subscribe_res = z_declare_subscriber(
+        z_loan(_z_session),
+        &ctx._sub,
+        z_loan(keyexpr),
         z_move(closure),
         &options);
 
-    if (!z_subscriber_check(&ctx._sub)) {
+    if (subscribe_res < 0) {
         _subscriptions.erase(res.first);
-        return -1;
+        return subscribe_res;
     }
 
-    const auto [unused, vars] = get(keyexpr);
+    const auto [unused, vars] = get(topic_str);
     for (const auto& var : vars) {
         std::visit(
             overload{
@@ -354,14 +395,16 @@ auto client_t::subscribe(
 }
 
 auto client_t::determine_connected_router_count() const //
-        -> int
+    -> int
 {
     int routers = 0;
-    auto lambda = [](const struct z_id_t*, void* counter) {
-        *static_cast<int*>(counter) += 1;
-    };
-    auto callback = z_owned_closure_zid_t{&routers, lambda, nullptr};
-    if (z_info_routers_zid(z_session_loan(&_z_session), z_move(callback)) != 0) {
+    auto lambda = [](const struct z_id_t*, void* counter) { *static_cast<int*>(counter) += 1; };
+
+    auto callback = z_owned_closure_zid_t{};
+    z_closure(&callback, lambda, nullptr, &routers);
+    if (z_info_routers_zid(
+            z_session_loan(&_z_session),
+            reinterpret_cast<z_moved_closure_zid_t*>(&callback)) != 0) {
         return 0;
     }
     return routers;
@@ -397,17 +440,18 @@ auto client_t::add_mem_storage(
     std::string_view topic) //
     -> int
 {
+    if (!is_connected()) {
+        return -1;
+    }
+
     if (_mem_storages.contains(mem_storage_t{name, {}})) {
         return -1;
     }
 
     auto zid = std::string(32, '0');
     {
-        auto cbk = z_owned_closure_zid_t{
-            .context = &zid,
-            .call = router_zid,
-            .drop = nullptr,
-        };
+        auto cbk = z_owned_closure_zid_t{};
+        z_closure(&cbk, router_zid, nullptr, reinterpret_cast<void*>(&zid));
         const auto res = z_info_routers_zid(z_loan(_z_session), z_move(cbk));
         if (res != 0) {
             return -1;
@@ -418,7 +462,7 @@ auto client_t::add_mem_storage(
 
     const auto req = nlohmann::json({{"key_expr", keyexpr}, {"volume", "memory"}}).dump();
     const auto admin_keyexpr =
-        ("@/router/" + zid + "/config/plugins/storage_manager/storages/").append(name);
+        ("@/" + zid + "/router/config/plugins/storage_manager/storages/").append(name);
 
     const auto res = publish_custom(admin_keyexpr, req.data(), req.size(), "application/json");
     if (res != 0) {
@@ -439,9 +483,14 @@ auto client_t::remove_mem_storage(std::string name) //
     }
 
     const auto admin_keyexpr =
-        ("@/router/" + it->zid + "/config/plugins/storage_manager/storages/").append(name);
-    const auto opts = z_delete_options_default();
-    const auto res = z_delete(z_loan(_z_session), z_keyexpr(admin_keyexpr.c_str()), &opts);
+        ("@/" + it->zid + "/router/config/plugins/storage_manager/storages/").append(name);
+
+    auto keyexpr = z_view_keyexpr_t{};
+    z_view_keyexpr_from_str(&keyexpr, admin_keyexpr.c_str());
+
+    auto opts = z_delete_options_t{};
+    z_delete_options_default(&opts);
+    const auto res = z_delete(z_loan(_z_session), z_loan(keyexpr), &opts);
 
     if (res != 0) {
         return -1;
@@ -461,45 +510,56 @@ auto client_t::get(std::string_view topic) const //
         return {-1, vars};
     }
 
-    auto reply_channel = zc_reply_fifo_new(64);
-    auto options = z_get_options_default();
-    options.target = Z_QUERY_TARGET_ALL;
-
-    auto keyexpr = z_keyexpr(topic.starts_with('/') ? topic.data() + 1 : topic.data());
-    if (!z_keyexpr_is_initialized(&keyexpr)) {
-        return {-1, vars};
+    auto keyexpr = z_view_keyexpr_t{};
+    const auto res =
+        z_view_keyexpr_from_str(&keyexpr, topic.starts_with('/') ? topic.data() + 1 : topic.data());
+    if (res < 0) {
+        return {res, vars};
     }
 
-    z_get(z_session_loan(&_z_session), keyexpr, "", z_move(reply_channel.send), &options);
+    auto options = z_get_options_t{};
+    z_get_options_default(&options);
+    options.target = Z_QUERY_TARGET_ALL;
 
-    z_owned_reply_t reply = z_reply_null();
-    for (z_reply_channel_closure_call(&reply_channel.recv, &reply); z_reply_check(&reply);
-         z_reply_channel_closure_call(&reply_channel.recv, &reply)) {
-        if (z_reply_is_ok(&reply)) {
-            const auto sample = z_reply_ok(&reply);
-            auto keyexpr = z_keyexpr_to_string(sample.keyexpr);
-            auto keystr = std::string{"/"} + std::string{keyexpr._cstr};
-            z_str_drop(z_move(keyexpr));
+    auto handler = z_owned_fifo_handler_reply_t{};
+    auto closure = z_owned_closure_reply_t{};
+    z_fifo_channel_reply_new(&closure, &handler, 64);
+
+    z_get(z_loan(_z_session), z_loan(keyexpr), "", z_move(closure), &options);
+
+    auto reply = z_owned_reply_t{};
+    for (z_result_t res = z_recv(z_loan(handler), &reply); res == Z_OK;
+         res = z_recv(z_loan(handler), &reply)) {
+        if (z_reply_is_ok(z_loan(reply))) {
+            const auto sample = z_reply_ok(z_loan(reply));
+
+            auto keyexpr = z_view_string_t{};
+            z_keyexpr_as_view_string(z_sample_keyexpr(sample), &keyexpr);
+
+            auto keystr = std::string{"/"} + std::string{z_string_data(z_loan(keyexpr))};
             if (keystr.starts_with("/@")) {
                 continue;
             }
 
+            auto payload_reader = z_bytes_get_reader(z_sample_payload(sample));
+            auto payload_len = z_bytes_reader_remaining(&payload_reader);
+            auto payload = std::string(payload_len + 1, '\0');
+            z_bytes_reader_read(
+                &payload_reader,
+                reinterpret_cast<uint8_t*>(payload.data()),
+                payload_len);
+
             vars.emplace_back(
                 std::move(keystr),
-                std::string(
-                    reinterpret_cast<const char*>(sample.payload.start),
-                    sample.payload.len),
-                to_string(
-                    sample.encoding.prefix,
-                    std::string_view{
-                        reinterpret_cast<const char*>(sample.encoding.suffix.start),
-                        sample.encoding.suffix.len}),
-                flunder::to_string(ntp64_to_unix_time(sample.timestamp.time)));
+                std::move(payload),
+                to_string(z_sample_encoding(sample)),
+                flunder::to_string(
+                    ntp64_to_unix_time(z_timestamp_ntp64_time(z_sample_timestamp(sample)))));
         }
     }
 
-    z_reply_drop(z_move(reply));
-    z_reply_channel_drop(z_move(reply_channel));
+    z_drop(z_move(reply));
+    z_drop(z_move(handler));
 
     return {0, vars};
 }
@@ -507,12 +567,27 @@ auto client_t::get(std::string_view topic) const //
 auto client_t::erase(std::string_view topic) //
     -> int
 {
-    const auto keyexpr = topic.starts_with('/') ? topic.data() + 1 : topic.data();
+    auto keyexpr = z_view_keyexpr_t{};
+    z_view_keyexpr_from_str(&keyexpr, topic.starts_with('/') ? topic.data() + 1 : topic.data());
 
-    auto options = z_delete_options_default();
-    const auto res = z_delete(z_session_loan(&_z_session), z_keyexpr(keyexpr), &options);
+    auto options = z_delete_options_t{};
+    z_delete_options_default(&options);
 
-    return (res == 0) ? 0 : -1;
+    const auto res = z_delete(z_loan(_z_session), z_loan(keyexpr), &options);
+
+    return res;
+}
+
+auto to_string(const z_loaned_encoding_t* encoding) //
+    -> std::string
+{
+    auto tmp = z_owned_string_t{};
+    z_encoding_to_string(encoding, &tmp);
+
+    auto str = std::string{z_string_data(z_loan(tmp)), z_string_len(z_loan(tmp))};
+    z_drop(z_move(tmp));
+
+    return str;
 }
 
 auto ntp64_to_unix_time(std::uint64_t ntp_time) //

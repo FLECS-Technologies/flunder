@@ -15,6 +15,7 @@
 #include "flunder/client.h"
 
 #include "flunder/impl/client.h"
+#include "flunder/impl/to_bytes.h"
 #include "flunder/to_string.h"
 
 namespace flunder {
@@ -74,107 +75,75 @@ auto client_t::disconnect() //
 auto client_t::publish(std::string_view topic, bool value) const //
     -> int
 {
-    return _impl->publish_bool(topic, flunder::to_string(value));
+    return _impl->publish_bool(topic, impl::to_bytes(value));
 }
 /* integer-types */
 auto client_t::publish(std::string_view topic, std::int8_t value) const //
     -> int
 {
-    return _impl->publish_int(
-        topic,
-        sizeof(value),
-        std::is_signed_v<decltype(value)>,
-        flunder::to_string(value));
+    return _impl->publish_int8(topic, impl::to_bytes(value));
 }
 auto client_t::publish(std::string_view topic, std::int16_t value) const //
     -> int
 {
-    return _impl->publish_int(
-        topic,
-        sizeof(value),
-        std::is_signed_v<decltype(value)>,
-        flunder::to_string(value));
+    return _impl->publish_int16(topic, impl::to_bytes(value));
 }
 auto client_t::publish(std::string_view topic, std::int32_t value) const //
     -> int
 {
-    return _impl->publish_int(
-        topic,
-        sizeof(value),
-        std::is_signed_v<decltype(value)>,
-        flunder::to_string(value));
+    return _impl->publish_int32(topic, impl::to_bytes(value));
 }
 auto client_t::publish(std::string_view topic, std::int64_t value) const //
     -> int
 {
-    return _impl->publish_int(
-        topic,
-        sizeof(value),
-        std::is_signed_v<decltype(value)>,
-        flunder::to_string(value));
+    return _impl->publish_int64(topic, impl::to_bytes(value));
 }
 auto client_t::publish(std::string_view topic, std::uint8_t value) const //
     -> int
 {
-    return _impl->publish_int(
-        topic,
-        sizeof(value),
-        std::is_signed_v<decltype(value)>,
-        flunder::to_string(value));
+    return _impl->publish_uint8(topic, impl::to_bytes(value));
 }
 auto client_t::publish(std::string_view topic, std::uint16_t value) const //
     -> int
 {
-    return _impl->publish_int(
-        topic,
-        sizeof(value),
-        std::is_signed_v<decltype(value)>,
-        flunder::to_string(value));
+    return _impl->publish_uint16(topic, impl::to_bytes(value));
 }
 auto client_t::publish(std::string_view topic, std::uint32_t value) const //
     -> int
 {
-    return _impl->publish_int(
-        topic,
-        sizeof(value),
-        std::is_signed_v<decltype(value)>,
-        flunder::to_string(value));
+    return _impl->publish_uint32(topic, impl::to_bytes(value));
 }
 auto client_t::publish(std::string_view topic, std::uint64_t value) const //
     -> int
 {
-    return _impl->publish_int(
-        topic,
-        sizeof(value),
-        std::is_signed_v<decltype(value)>,
-        flunder::to_string(value));
+    return _impl->publish_uint64(topic, impl::to_bytes(value));
 }
 /* floating-point-types */
 auto client_t::publish(std::string_view topic, float value) const //
     -> int
 {
-    return _impl->publish_float(topic, sizeof(value), flunder::to_string(value));
+    return _impl->publish_float(topic, impl::to_bytes(value));
 }
 auto client_t::publish(std::string_view topic, double value) const //
     -> int
 {
-    return _impl->publish_float(topic, sizeof(value), flunder::to_string(value));
+    return _impl->publish_double(topic, impl::to_bytes(value));
 }
 /* string-types */
 auto client_t::publish(std::string_view topic, const std::string& value) const //
     -> int
 {
-    return _impl->publish_string(topic, value);
+    return _impl->publish_string(topic, impl::to_bytes(value));
 }
 auto client_t::publish(std::string_view topic, const std::string_view& value) const //
     -> int
 {
-    return _impl->publish_string(topic, flunder::to_string(value));
+    return _impl->publish_string(topic, impl::to_bytes(value));
 }
 auto client_t::publish(std::string_view topic, const char* value) const //
     -> int
 {
-    return _impl->publish_string(topic, flunder::to_string(value));
+    return _impl->publish_string(topic, impl::to_bytes(value));
 }
 
 auto client_t::publish(std::string_view topic, const void* data, size_t len) const //

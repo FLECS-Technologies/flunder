@@ -56,27 +56,72 @@ public:
     FLECS_EXPORT auto disconnect() //
         -> int;
 
-    FLECS_EXPORT auto publish_bool(
+    FLECS_EXPORT auto publish(
         std::string_view topic,
-        const std::string& value) const //
+        z_owned_bytes_t value,
+        std::string_view encoding) const //
         -> int;
 
-    FLECS_EXPORT auto publish_int(
+    FLECS_EXPORT auto publish_bool(
         std::string_view topic,
-        size_t size,
-        bool is_signed,
-        const std::string& value) const //
+        z_owned_bytes_t value) const //
+        -> int;
+
+    FLECS_EXPORT auto publish_int8(
+        std::string_view topic,
+        z_owned_bytes_t value) const //
+        -> int;
+    FLECS_EXPORT auto publish_int16(
+        std::string_view topic,
+        z_owned_bytes_t value) const //
+        -> int;
+    FLECS_EXPORT auto publish_int32(
+        std::string_view topic,
+        z_owned_bytes_t value) const //
+        -> int;
+    FLECS_EXPORT auto publish_int64(
+        std::string_view topic,
+        z_owned_bytes_t value) const //
+        -> int;
+    FLECS_EXPORT auto publish_int128(
+        std::string_view topic,
+        z_owned_bytes_t value) const //
+        -> int;
+
+    FLECS_EXPORT auto publish_uint8(
+        std::string_view topic,
+        z_owned_bytes_t value) const //
+        -> int;
+    FLECS_EXPORT auto publish_uint16(
+        std::string_view topic,
+        z_owned_bytes_t value) const //
+        -> int;
+    FLECS_EXPORT auto publish_uint32(
+        std::string_view topic,
+        z_owned_bytes_t value) const //
+        -> int;
+    FLECS_EXPORT auto publish_uint64(
+        std::string_view topic,
+        z_owned_bytes_t value) const //
+        -> int;
+    FLECS_EXPORT auto publish_uint128(
+        std::string_view topic,
+        z_owned_bytes_t value) const //
         -> int;
 
     FLECS_EXPORT auto publish_float(
         std::string_view topic,
-        size_t size,
-        const std::string& value) const //
+        z_owned_bytes_t value) const //
+        -> int;
+
+    FLECS_EXPORT auto publish_double(
+        std::string_view topic,
+        z_owned_bytes_t value) const //
         -> int;
 
     FLECS_EXPORT auto publish_string(
         std::string_view topic,
-        const std::string& value) const //
+        z_owned_bytes_t value) const //
         -> int;
 
     FLECS_EXPORT auto publish_raw(
@@ -133,13 +178,13 @@ public:
     };
 
 private:
-    FLECS_EXPORT auto publish(
+    FLECS_EXPORT auto do_publish(
         std::string_view topic,
-        z_encoding_t encoding,
-        const std::string& value) const //
+        z_owned_encoding_t encoding,
+        z_owned_bytes_t value) const //
         -> int;
 
-    FLECS_EXPORT auto subscribe(
+    FLECS_EXPORT auto do_subscribe(
         flunder::client_t* client,
         std::string_view topic,
         subscribe_cbk_var_t cbk,
@@ -157,7 +202,7 @@ private:
     std::map<std::string, subscribe_ctx_t> _subscriptions;
 };
 
-auto to_string(z_encoding_prefix_t prefix, std::string_view suffix) //
+auto to_string(const z_loaned_encoding_t* encoding) //
     -> std::string;
 
 auto ntp64_to_unix_time(std::uint64_t ntp_time) //
