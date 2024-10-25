@@ -30,7 +30,7 @@ jobs:
         run: |
           cmake --build build/${{ matrix.arch }} --target package
       - name: "Archive packages"
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: packages_${{ matrix.arch }}
           path: |
