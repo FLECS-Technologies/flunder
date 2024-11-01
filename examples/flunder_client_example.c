@@ -61,16 +61,17 @@ int main(void)
     void* flunder_client = flunder_client_new();
 
     flunder_connect(flunder_client, FLECS_FLUNDER_HOST, FLECS_FLUNDER_PORT);
-    flunder_add_mem_storage(flunder_client, "flunder-c", "/flecs/flunder/**");
-    flunder_subscribe(flunder_client, "/flecs/flunder/c/int", &flunder_subscribe_callback);
-    flunder_subscribe(flunder_client, "/flecs/flunder/c/float", &flunder_subscribe_callback);
-    flunder_subscribe(flunder_client, "/flecs/flunder/external", &flunder_subscribe_callback);
+    flunder_add_mem_storage(flunder_client, "flunder-c", "flecs/flunder/**");
+    flunder_subscribe(flunder_client, "flecs/flunder/c/int", &flunder_subscribe_callback);
+    flunder_subscribe(flunder_client, "flecs/flunder/c/float", &flunder_subscribe_callback);
+    flunder_subscribe(flunder_client, "flecs/flunder/external", &flunder_subscribe_callback);
 
     while (!g_stop) {
         int i = 1234;
         float f = 3.14159;
-        flunder_publish_int(flunder_client, "/flecs/flunder/c/int", i);
-        flunder_publish_float(flunder_client, "/flecs/flunder/c/float", f);
+        flunder_publish_int(flunder_client, "flecs/flunder/c/int", i);
+        flunder_publish_float(flunder_client, "flecs/flunder/c/float", f);
+        flunder_publish_string(flunder_client, "flecs/flunder/c/string", "Hello from C!");
         sleep(5);
 
         variable_t* vars;
