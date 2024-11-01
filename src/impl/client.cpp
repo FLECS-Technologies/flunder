@@ -536,8 +536,9 @@ auto client_t::get(std::string_view topic) const //
             auto keyexpr = z_view_string_t{};
             z_keyexpr_as_view_string(z_sample_keyexpr(sample), &keyexpr);
 
-            auto keystr = std::string{"/"} + std::string{z_string_data(z_loan(keyexpr))};
-            if (keystr.starts_with("/@")) {
+            auto keystr =
+                std::string{z_string_data(z_loan(keyexpr)), z_string_len(z_loan(keyexpr))};
+            if (keystr.starts_with("@")) {
                 continue;
             }
 
