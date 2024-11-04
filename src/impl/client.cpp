@@ -544,7 +544,7 @@ auto client_t::get(std::string_view topic) const //
 
             auto payload_reader = z_bytes_get_reader(z_sample_payload(sample));
             auto payload_len = z_bytes_reader_remaining(&payload_reader);
-            auto payload = std::string(payload_len + 1, '\0');
+            auto payload = std::string(payload_len, '\0');
             z_bytes_reader_read(
                 &payload_reader,
                 reinterpret_cast<uint8_t*>(payload.data()),
