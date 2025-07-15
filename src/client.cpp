@@ -230,6 +230,11 @@ FLECS_EXPORT int flunder_connect(void* flunder, const char* host, int port)
     return static_cast<flunder::client_t*>(flunder)->connect(host, port);
 }
 
+FLECS_EXPORT int flunder_is_connected(const void* flunder)
+{
+    return static_cast<const flunder::client_t*>(flunder)->is_connected();
+}
+
 FLECS_EXPORT int flunder_reconnect(void* flunder)
 {
     return static_cast<flunder::client_t*>(flunder)->reconnect();
@@ -302,6 +307,11 @@ FLECS_EXPORT int flunder_publish_int32(const void* flunder, const char* topic, i
 }
 
 FLECS_EXPORT int flunder_publish_int64(const void* flunder, const char* topic, int64_t value)
+{
+    return static_cast<const flunder::client_t*>(flunder)->publish(topic, value);
+}
+
+FLECS_EXPORT int flunder_publish_uint(const void* flunder, const char* topic, unsigned value)
 {
     return static_cast<const flunder::client_t*>(flunder)->publish(topic, value);
 }
