@@ -178,6 +178,8 @@ FLECS_EXPORT void flunder_client_destroy(void* flunder);
 
 FLECS_EXPORT int flunder_connect(void* flunder, const char* host, int port);
 
+FLECS_EXPORT int flunder_is_connected(const void* flunder);
+
 FLECS_EXPORT int flunder_reconnect(void* flunder);
 
 FLECS_EXPORT int flunder_disconnect(void* flunder);
@@ -198,6 +200,7 @@ FLECS_EXPORT int flunder_publish_int8(const void* flunder, const char* topic, in
 FLECS_EXPORT int flunder_publish_int16(const void* flunder, const char* topic, int16_t value);
 FLECS_EXPORT int flunder_publish_int32(const void* flunder, const char* topic, int32_t value);
 FLECS_EXPORT int flunder_publish_int64(const void* flunder, const char* topic, int64_t value);
+FLECS_EXPORT int flunder_publish_uint(const void* flunder, const char* topic, unsigned value);
 FLECS_EXPORT int flunder_publish_uint8(const void* flunder, const char* topic, uint8_t value);
 FLECS_EXPORT int flunder_publish_uint16(const void* flunder, const char* topic, uint16_t value);
 FLECS_EXPORT int flunder_publish_uint32(const void* flunder, const char* topic, uint32_t value);
