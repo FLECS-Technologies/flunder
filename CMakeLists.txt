@@ -14,25 +14,22 @@
 
 cmake_minimum_required(VERSION 3.21)
 
-include(${CMAKE_SOURCE_DIR}/flecs-build/cmake/flecs-build.cmake)
+project(flunder VERSION 3.0.0 LANGUAGES CXX)
 
-project(flunder VERSION 3.0.0)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+set(CMAKE_CXX_EXTENSIONS OFF)
+add_compile_options(-Wall -Wextra -Werror -Wfatal-errors)
 
-if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
-    set(FLECS_NEED_ZENOHC TRUE)
-    add_subdirectory(flecs-external)
-endif()
+find_package(zenohc 1.0.0 REQUIRED)
+
+# provide macro to export symbols
+add_definitions("-DFLECS_EXPORT=__attribute__((visibility(\"default\")))")
 
 if(FLECS_BUILD_TESTS)
     include(CTest)
     add_compile_options(-fprofile-arcs -ftest-coverage)
     add_link_options(-lgcov --coverage)
-    add_definitions(-DFLECS_UNIT_TEST)
-    add_definitions(-DFLECS_CONSTEXPR_UNLESS_TESTED=)
-    add_definitions(-DFLECS_FINAL_UNLESS_TESTED=)
-else()
-    add_definitions(-DFLECS_CONSTEXPR_UNLESS_TESTED=constexpr)
-    add_definitions(-DFLECS_FINAL_UNLESS_TESTED=final)
 endif()
 
 set(SRC_LIB
