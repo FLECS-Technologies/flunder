@@ -20,7 +20,18 @@ install(
     COMPONENT runtime
     EXCLUDE_FROM_ALL
 )
-get_target_property(zenohc-lib zenohc::lib IMPORTED_LOCATION)
+get_target_property(zenohc-alias zenohc::lib ALIASED_TARGET)
+
+if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+    get_target_property(zenohc-lib ${zenohc-alias} IMPORTED_LOCATION_RELEASE)
+elseif(${CMAKE_BUILD_TYPE} STREQUAL "MinSizeRel")
+    get_target_property(zenohc-lib ${zenohc-alias} IMPORTED_LOCATION_MINSIZEREL)
+elseif(${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
+    get_target_property(zenohc-lib ${zenohc-alias} IMPORTED_LOCATION_RELWITHDEBINFO)
+else()
+    get_target_property(zenohc-lib ${zenohc-alias} IMPORTED_LOCATION_DEBUG)
+endif()
+
 install(
     FILES ${zenohc-lib}
     DESTINATION ${CMAKE_INSTALL_LIBDIR}
