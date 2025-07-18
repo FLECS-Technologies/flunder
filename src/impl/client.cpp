@@ -557,9 +557,9 @@ auto client_t::get(std::string_view topic) const //
                 flunder::to_string(
                     ntp64_to_unix_time(z_timestamp_ntp64_time(z_sample_timestamp(sample)))));
         }
+        z_drop(z_move(reply));
     }
 
-    z_drop(z_move(reply));
     z_drop(z_move(handler));
 
     return {0, vars};
