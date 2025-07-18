@@ -12,16 +12,82 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.25)
 
 project(flunder VERSION 4.1.0 LANGUAGES CXX)
+
+include(FetchContent)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_EXTENSIONS OFF)
 add_compile_options(-Wall -Wextra -Werror -Wfatal-errors)
 
-find_package(zenohc 1.0.0 REQUIRED)
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
+if(FLUNDER_USE_SYSTEM_GTEST)
+    find_package(GTest 1.12.1 REQUIRED)
+else()
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG        v1.17.0
+    )
+    FetchContent_MakeAvailable(googletest)
+endif()
+
+if(FLUNDER_USE_SYSTEM_ZENOHC)
+    find_package(zenohc 1.4.0 REQUIRED)
+else()
+    FetchContent_Declare(
+        zenohc
+        GIT_REPOSITORY https://github.com/eclipse-zenoh/zenoh-c.git
+        GIT_TAG        1.4.0
+    )
+    set(ZENOHC_BUILD_WITH_UNSTABLE_API TRUE)
+    FetchContent_MakeAvailable(zenohc)
+endif()
+
+if(FLUNDER_USE_SYSTEM_BOOST)
+    if(POLICY CMP0167)
+        cmake_policy(SET CMP0167 NEW)
+    endif()
+    find_package(Boost 1.81.0 REQUIRED)
+else()
+    # Workaround Boost compilation warning
+    add_compile_options("-Wno-aggressive-loop-optimizations")
+    foreach(module IN ITEMS
+        assert
+        config
+        container
+        core
+        intrusive
+        lexical_cast
+        move
+        static_assert
+        throw_exception
+        type_traits
+    )
+        FetchContent_Declare(boost_${module}
+            GIT_REPOSITORY https://github.com/boostorg/${module}.git
+            GIT_TAG boost-1.88.0
+        )
+        FetchContent_MakeAvailable(boost_${module})
+    endforeach()
+endif()
+
+if(FLUNDER_USE_SYSTEM_NLOHMANN_JSON)
+    find_package(nlohmann::json 3.11.0 REQUIRED)
+else()
+    FetchContent_Declare(
+        nlohmann_json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG        v3.12.0
+    )
+    FetchContent_MakeAvailable(nlohmann_json)
+endif()
 
 # provide macro to export symbols
 add_definitions("-DFLECS_EXPORT=__attribute__((visibility(\"default\")))")
@@ -65,6 +131,8 @@ target_include_directories(flunder PRIVATE
 )
 
 target_link_libraries(flunder PRIVATE
+    Boost::lexical_cast
+    nlohmann_json::nlohmann_json
     zenohc::lib
 )
 
