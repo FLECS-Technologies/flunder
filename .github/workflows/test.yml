@@ -6,24 +6,34 @@ on:
 jobs:
   test:
     runs-on: ubuntu-24.04
+    container: debian:bookworm-slim
 
     steps:
-      - name: Install gcovr
-        run: |
-          sudo apt-get update && sudo apt-get -y install gcovr
       - uses: actions/checkout@v4
+
+      - name: Setup toolchain
+        uses: ./.github/actions/setup-toolchain
         with:
-          submodules: true
+          arch: amd64
+
+      - name: Install additional tools
+        run: |
+          apt-get update && apt-get --yes --no-install-recommends install \
+            gcovr docker.io
+
       - name: "CMake: Configure"
         run: |
           cmake -G Ninja -B build/test -DCMAKE_BUILD_TYPE=RelWithDebInfo -DFLECS_BUILD_TESTS=On -DCMAKE_INSTALL_PREFIX=out/test
+
       - name: "CMake: Build"
         run: |
           docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}'
           cmake --build build/test
+
       - name: "CMake: Test"
         run: |
           ctest --test-dir build/test --verbose
+
       - name: "CMake: Coverage"
         run: |
           cmake --build build/test --target coverage

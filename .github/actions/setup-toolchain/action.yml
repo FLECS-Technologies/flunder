@@ -1,0 +1,67 @@
+name: "Setup Toolchain"
+description: "Installs toolchain for a given architecture"
+inputs:
+  arch:
+    description: "Target architecture (amd64, arm64, armhf)"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install tools
+      shell: bash
+      run: |
+        apt-get update && apt-get --yes --no-install-recommends install \
+          ca-certificates cmake curl g++ git ninja-build
+
+    - name: Install C++ toolchain
+      shell: bash
+      run: |
+        case "${{ inputs.arch }}" in
+          amd64)
+            # Native g++ is always required for build-time dependencies. Nothing to do here.
+            ;;
+          arm64)
+            PACKAGES="g++-aarch64-linux-gnu"
+            ;;
+          armhf)
+            PACKAGES="g++-arm-linux-gnueabihf"
+            ;;
+          *)
+            exit 1
+            ;;
+        esac
+        if [ ! -z "${PACKAGES}" ]; then
+          apt-get update && apt-get --yes --no-install-recommends install ${PACKAGES}
+        fi
+
+    - name: Set Rust target
+      id: set-rust-target
+      shell: bash
+      run: |
+        case "${{ inputs.arch }}" in
+          amd64)
+            echo "target=x86_64-unknown-linux-gnu" >>"$GITHUB_OUTPUT"
+            ;;
+          arm64)
+            echo "target=aarch64-unknown-linux-gnu" >>"$GITHUB_OUTPUT"
+            ;;
+          armhf)
+            echo "target=armv7-unknown-linux-gnueabihf" >>"$GITHUB_OUTPUT"
+            ;;
+          *)
+            exit 1
+            ;;
+        esac
+
+    - name: Install Rust toolchain
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: 1.85.0
+        target: ${{ steps.set-rust-target.outputs.target }}
+        rustflags: ''
+
+    - name: Configure cargo environment
+      shell: bash
+      run: |
+        echo "CARGO_TERM_COLOR=never" >>"$GITHUB_ENV"
