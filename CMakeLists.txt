@@ -39,12 +39,12 @@ else()
 endif()
 
 if(FLUNDER_USE_SYSTEM_ZENOHC)
-    find_package(zenohc 1.4.0 REQUIRED)
+    find_package(zenohc 1.5.0 REQUIRED)
 else()
     FetchContent_Declare(
         zenohc
         GIT_REPOSITORY https://github.com/eclipse-zenoh/zenoh-c.git
-        GIT_TAG        1.4.0
+        GIT_TAG        1.5.0
     )
     set(ZENOHC_BUILD_WITH_UNSTABLE_API TRUE)
     FetchContent_MakeAvailable(zenohc)
