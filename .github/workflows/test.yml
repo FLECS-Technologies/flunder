@@ -19,6 +19,7 @@ jobs:
           cmake -G Ninja -B build/test -DCMAKE_BUILD_TYPE=RelWithDebInfo -DFLECS_BUILD_TESTS=On -DCMAKE_INSTALL_PREFIX=out/test
       - name: "CMake: Build"
         run: |
+          docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}'
           cmake --build build/test
       - name: "CMake: Test"
         run: |
