@@ -170,7 +170,7 @@ TEST(flunder, init)
     auto client_1 = flunder::client_t{};
     ASSERT_FALSE(client_1.is_connected());
 
-    auto res = client_1.connect("172.18.0.1", 7447);
+    auto res = client_1.connect("172.30.0.2", 7447);
     ASSERT_EQ(res, 0);
     ASSERT_TRUE(client_1.is_connected());
 
@@ -198,8 +198,8 @@ TEST(flunder, pub_sub)
     auto client_1 = flunder::client_t{};
     auto client_2 = flunder::client_t{};
 
-    client_1.connect("172.18.0.1", 7447);
-    client_2.connect("172.18.0.1", 7447);
+    client_1.connect("172.30.0.2", 7447);
+    client_2.connect("172.30.0.2", 7447);
 
     auto res = client_1.subscribe(
         topic(nullptr),
@@ -289,7 +289,7 @@ TEST(flunder, mem_storage)
         ASSERT_TRUE(vars.empty());
     }
 
-    client.connect("172.18.0.1", 7447);
+    client.connect("172.30.0.2", 7447);
     client.publish("flecs/flunder/test/mem_storage/int", 1111);
     {
         /* Connected -> success, but no variables */
@@ -361,7 +361,7 @@ TEST(flunder, c)
     auto client = flunder_client_new();
     ASSERT_NE(client, nullptr);
 
-    auto res = flunder_connect(client, "172.18.0.1", 7447);
+    auto res = flunder_connect(client, "172.30.0.2", 7447);
     ASSERT_EQ(res, 0);
 
     res = flunder_subscribe_userp(client, topic(bool{}), flunder_cbk_c_userp<bool>, client);
