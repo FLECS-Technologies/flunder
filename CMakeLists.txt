@@ -14,6 +14,28 @@
 
 cmake_minimum_required(VERSION 3.25)
 
+# set target toolchain, if ARCH is provided
+if(ARCH)
+    set(USER_ARCH ${ARCH})
+
+    if("${ARCH}" STREQUAL "amd64")
+        set(TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchains/amd64.cmake)
+    elseif("${ARCH}" STREQUAL "arm64")
+        set(TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchains/arm64.cmake)
+    elseif("${ARCH}" STREQUAL "armhf")
+        set(TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchains/armhf.cmake)
+    else()
+        message(FATAL_ERROR "Invalid target architecture ${ARCH} specified")
+    endif()
+endif()
+
+if(TOOLCHAIN_FILE)
+    message(STATUS "Using toolchain from ${TOOLCHAIN_FILE}")
+    include(${TOOLCHAIN_FILE})
+else()
+    enable_language(CXX)
+endif()
+
 project(flunder VERSION 4.1.0 LANGUAGES CXX)
 
 include(FetchContent)
@@ -47,6 +69,10 @@ else()
         GIT_TAG        1.5.0
     )
     set(ZENOHC_BUILD_WITH_UNSTABLE_API TRUE)
+    if (RUSTC_TARGET)
+        set(ZENOHC_CARGO_FLAGS "--config" "target.${RUSTC_TARGET}.linker=\"${CMAKE_C_COMPILER}\"")
+    endif()
+    set(ZENOHC_CUSTOM_TARGET ${RUSTC_TARGET})
     FetchContent_MakeAvailable(zenohc)
 endif()
 
