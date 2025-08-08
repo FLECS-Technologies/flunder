@@ -41,19 +41,9 @@ if(FLECS_BUILD_TESTS)
         COMMAND bash -c "docker rm -f flecs-flunder-test")
 
     add_test(
-        NAME flunder.test.init.remove-network
-        COMMAND bash -c "docker network rm -f flunder-test-net")
-    set_tests_properties(flunder.test.init.remove-network PROPERTIES DEPENDS flunder.test.init.remove-container)
-
-    add_test(
-        NAME flunder.test.init.create-network
-        COMMAND bash -c "docker network create --driver bridge --subnet 172.30.0.0/16 flunder-test-net")
-    set_tests_properties(flunder.test.init.create-network PROPERTIES DEPENDS flunder.test.init.remove-network)
-
-    add_test(
         NAME flunder.test.init.create-container
-        COMMAND bash -c "docker create --name flecs-flunder-test --network flunder-test-net --ip 172.30.0.2 -p 7447:7447 --env RUST_LOG=trace flecspublic.azurecr.io/tech.flecs.flunder:4.0.0 --plugin=rest --plugin=storage_manager --adminspace-permissions=rw")
-    set_tests_properties(flunder.test.init.create-container PROPERTIES DEPENDS flunder.test.init.create-network)
+        COMMAND bash -c "docker create --name flecs-flunder-test -p 7447:7447 --env RUST_LOG=trace flecspublic.azurecr.io/tech.flecs.flunder:4.0.0 --plugin=storage_manager --adminspace-permissions=rw")
+    set_tests_properties(flunder.test.init.create-container PROPERTIES DEPENDS flunder.test.init.remove-container)
 
     add_test(
         NAME flunder.test.init.start-container
@@ -72,11 +62,4 @@ if(FLECS_BUILD_TESTS)
         NAME flunder.test.cleanup.remove-container
         COMMAND bash -c "docker rm -f flecs-flunder-test")
     set_tests_properties(flunder.test.cleanup.remove-container PROPERTIES DEPENDS ${PROJECT_NAME})
-
-    add_test(
-        NAME flunder.test.cleanup.remove-network
-        COMMAND bash -c "docker network rm -f flunder-test-net"
-    )
-    set_tests_properties(flunder.test.cleanup.remove-network PROPERTIES DEPENDS flunder.test.cleanup.remove-container)
-
 endif()
