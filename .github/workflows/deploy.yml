@@ -38,7 +38,7 @@ jobs:
               echo "Uploading ${i}"; \
               az storage blob upload --auth-mode login --account-name flecs --container-name flecs-dl --name ${{ inputs.deploy-type }}/libflunder/deb/$(basename ${i}) --file ${i} --overwrite
             done
-            for i in `-name "libflunder_*.tar.gz"` -o -name "libflunder-dev_*.tar.gz"`; do \
+            for i in `find build/ -name "libflunder_*.tar.gz" -o -name "libflunder-dev_*.tar.gz"`; do \
               echo "Uploading ${i}"; \
               az storage blob upload --auth-mode login --account-name flecs --container-name flecs-dl --name ${{ inputs.deploy-type }}/libflunder/tgz/$(basename ${i}) --file ${i} --overwrite
             done
